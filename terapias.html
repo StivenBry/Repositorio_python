@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gestión de Terapias - Sincronizado con Drive</title>
+    <title>Gestión de Terapias - Sincronización Total</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/lucide/0.263.0/lucide.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
@@ -13,8 +13,6 @@
         body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
         .card { background: white; border-radius: 12px; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); transition: all 0.2s; }
         .card:hover { transform: translateY(-2px); box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1); }
-        .tab-active { border-bottom: 2px solid #3b82f6; color: #3b82f6; }
-        .scroll-hide::-webkit-scrollbar { display: none; }
         .view-btn-active { background-color: white !important; color: #2563eb !important; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); }
         .view-btn-inactive { color: #64748b !important; }
         #toast {
@@ -29,7 +27,7 @@
     </style>
 </head>
 <body class="p-4 md:p-8">
-    <div id="toast">Datos actualizados</div>
+    <div id="toast">Datos guardados en la nube</div>
 
     <div class="max-w-6xl mx-auto">
         <!-- Configuración de Enlace Drive -->
@@ -39,19 +37,18 @@
             </h2>
             <div class="flex flex-col md:flex-row gap-3">
                 <input type="text" id="sheetUrl" placeholder="Pega aquí el enlace de 'Publicar en la web' (formato CSV)" 
-                       class="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                       class="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none">
                 <button onclick="syncFromSheets()" class="bg-blue-600 text-white px-6 py-3 rounded-xl font-bold text-sm hover:bg-blue-700 transition flex items-center justify-center gap-2">
-                    <i data-lucide="refresh-cw" class="w-4 h-4" id="sync-icon"></i> Sincronizar Ahora
+                    <i data-lucide="refresh-cw" class="w-4 h-4" id="sync-icon"></i> Sincronizar Excel
                 </button>
             </div>
-            <p class="text-[10px] text-slate-400 mt-3">Para obtener el link: Archivo > Compartir > Publicar en la Web > CSV.</p>
         </div>
 
-        <!-- Header y Navegación (Igual que antes) -->
+        <!-- Header -->
         <div class="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
             <div>
-                <h1 class="text-3xl font-bold text-slate-800 tracking-tight">Panel de Control</h1>
-                <p class="text-slate-500 font-medium" id="status-text">Listo para trabajar</p>
+                <h1 class="text-3xl font-bold text-slate-800 tracking-tight">Control de Pacientes</h1>
+                <p class="text-slate-500 font-medium" id="status-text">Conectando con la base de datos...</p>
             </div>
             <div class="flex bg-slate-100 p-1.5 rounded-2xl w-fit shadow-inner">
                 <button id="btn-view-list" onclick="switchView('list')" class="px-6 py-2 rounded-xl text-sm font-bold transition view-btn-active">Pacientes</button>
@@ -59,7 +56,6 @@
             </div>
         </div>
 
-        <!-- Contenedores de Vista -->
         <div id="view-list" class="block">
             <div id="patientsGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
         </div>
@@ -67,91 +63,132 @@
         <div id="view-calendar" class="hidden">
             <div class="bg-white rounded-3xl p-8 border border-slate-100 shadow-sm" id="calendarContent"></div>
         </div>
-
-        <div id="emptyState" class="hidden text-center py-20">
-            <i data-lucide="database" class="w-12 h-12 text-slate-200 mx-auto mb-4"></i>
-            <p class="text-slate-400">No hay datos cargados desde el enlace.</p>
-        </div>
     </div>
+
+    <!-- Firebase SDK -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getFirestore, doc, setDoc, getDoc, onSnapshot, signInAnonymously, getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+
+        // Firebase Config
+        const firebaseConfig = JSON.parse(__firebase_config);
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-terapia-app';
+
+        let currentUser = null;
+        let cloudData = {};
+
+        // Auth
+        const initAuth = async () => {
+            if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                await signInWithCustomToken(auth, __initial_auth_token);
+            } else {
+                await signInAnonymously(auth);
+            }
+        };
+
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                currentUser = user;
+                setupPersistence();
+            }
+        });
+
+        function setupPersistence() {
+            const docRef = doc(db, 'artifacts', appId, 'users', currentUser.uid, 'appData', 'state');
+            onSnapshot(docRef, (snapshot) => {
+                if (snapshot.exists()) {
+                    cloudData = snapshot.data();
+                    if (window.patients.length > 0) applyCloudData();
+                }
+                document.getElementById('status-text').innerText = "Sincronizado con la nube";
+            });
+        }
+
+        window.saveState = async () => {
+            if (!currentUser) return;
+            const docRef = doc(db, 'artifacts', appId, 'users', currentUser.uid, 'appData', 'state');
+            const dataToSave = {};
+            window.patients.forEach(p => {
+                dataToSave[p.uniqueId] = {
+                    horario: p.horario,
+                    completadas: p.completadas
+                };
+            });
+            await setDoc(docRef, dataToSave);
+            showToast("Progreso guardado");
+        };
+
+        window.applyCloudData = () => {
+            window.patients.forEach(p => {
+                if (cloudData[p.uniqueId]) {
+                    p.horario = cloudData[p.uniqueId].horario || "";
+                    p.completadas = cloudData[p.uniqueId].completadas || 0;
+                }
+            });
+            renderPatients();
+        };
+
+        initAuth();
+    </script>
 
     <script>
         window.patients = [];
         
         function initIcons() { if (window.lucide) lucide.createIcons(); }
 
-        // --- SINCRONIZACIÓN CON GOOGLE SHEETS ---
         async function syncFromSheets() {
             const url = document.getElementById('sheetUrl').value;
-            if (!url) { alert("Por favor, pega un enlace válido."); return; }
-            
-            const btnIcon = document.getElementById('sync-icon');
-            btnIcon.classList.add('animate-spin');
-            
+            if (!url) return;
             localStorage.setItem('saved_sheet_url', url);
-
+            
             Papa.parse(url, {
                 download: true,
                 header: true,
                 complete: function(results) {
                     processData(results.data);
-                    btnIcon.classList.remove('animate-spin');
-                    showToast("Sincronización completa");
-                },
-                error: function() {
-                    alert("Error al acceder al enlace. Asegúrate de que el archivo esté 'Publicado en la web' como CSV.");
-                    btnIcon.classList.remove('animate-spin');
                 }
             });
         }
 
         function processData(data) {
             window.patients = data.filter(row => row.Nombre || row.Paciente).map((row, index) => {
+                const nombre = row.Nombre || row.Paciente;
                 const tFisica = parseInt(row['T. FISICA'] || 0);
                 const tOcupacional = parseInt(row['T. OCUPACIONAL'] || 0);
                 const tRespira = parseInt(row['T.RESPIRA'] || 0);
                 
                 return {
                     id: index,
-                    nombre: row.Nombre || row.Paciente,
+                    uniqueId: btoa(nombre).substring(0, 15), // ID único basado en el nombre para vincular datos nube
+                    nombre: nombre,
                     direccion: row.Direccion || row.Dirección || "",
-                    horario: localStorage.getItem(`h_${index}`) || "", // Persistencia local de horarios
-                    completadas: parseInt(localStorage.getItem(`c_${index}`)) || 0,
-                    totalSesiones: tFisica + tOcupacional + tRespira,
-                    grupo: (row.Direccion || "").toLowerCase().includes('circasia') ? 'circasia' : 'otros'
+                    horario: "",
+                    completadas: 0,
+                    totalSesiones: tFisica + tOcupacional + tRespira
                 };
             });
-            renderPatients();
-            document.getElementById('status-text').innerText = "Datos sincronizados desde Drive";
+            if (window.applyCloudData) window.applyCloudData();
         }
 
-        // --- RENDERIZADO Y LÓGICA ---
         function renderPatients() {
             const grid = document.getElementById('patientsGrid');
-            if (window.patients.length === 0) {
-                document.getElementById('emptyState').classList.remove('hidden');
-                grid.innerHTML = '';
-                return;
-            }
-            document.getElementById('emptyState').classList.add('hidden');
-            
             grid.innerHTML = window.patients.map(p => {
                 const perc = p.totalSesiones > 0 ? Math.round((p.completadas / p.totalSesiones) * 100) : 0;
                 return `
-                    <div class="card p-6 border border-slate-100 flex flex-col h-full">
-                        <div class="flex-grow">
-                            <h3 class="font-bold text-slate-800 text-lg mb-1 truncate">${p.nombre}</h3>
-                            <p class="text-xs text-slate-400 mb-4 truncate">${p.direccion}</p>
-                            <input type="text" value="${p.horario}" onchange="saveTime(${p.id}, this.value)" placeholder="Asignar hora..." 
-                                   class="w-full bg-slate-50 border border-slate-100 rounded-xl px-3 py-2 text-sm font-medium mb-4 focus:outline-none">
+                    <div class="card p-6 border border-slate-100">
+                        <h3 class="font-bold text-slate-800 truncate">${p.nombre}</h3>
+                        <p class="text-xs text-slate-400 mb-4">${p.direccion}</p>
+                        <div class="flex gap-2 mb-4">
+                            <input type="text" value="${p.horario}" onchange="updateLocal(${p.id}, 'horario', this.value)" 
+                                   class="flex-1 bg-slate-50 border rounded-lg px-2 py-1 text-sm" placeholder="Hora">
+                            <button onclick="addSession(${p.id})" class="bg-emerald-100 text-emerald-600 px-3 py-1 rounded-lg text-xs font-bold">+1</button>
                         </div>
-                        <div class="mt-auto">
-                            <div class="flex justify-between text-[10px] mb-1 font-bold text-slate-500">
-                                <span>PROGRESO</span>
-                                <span>${p.completadas}/${p.totalSesiones}</span>
-                            </div>
-                            <div class="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
-                                <div class="bg-blue-500 h-full transition-all" style="width:${perc}%"></div>
-                            </div>
+                        <div class="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
+                            <div class="bg-blue-500 h-full transition-all" style="width:${perc}%"></div>
                         </div>
                     </div>
                 `;
@@ -159,17 +196,21 @@
             initIcons();
         }
 
-        function saveTime(id, val) {
-            localStorage.setItem(`h_${id}`, val);
-            window.patients[id].horario = val;
-            showToast("Hora guardada localmente");
+        function updateLocal(id, field, val) {
+            window.patients[id][field] = val;
+            if (window.saveState) window.saveState();
+        }
+
+        function addSession(id) {
+            if (window.patients[id].completadas < window.patients[id].totalSesiones) {
+                window.patients[id].completadas++;
+                if (window.saveState) window.saveState();
+            }
         }
 
         function switchView(view) {
             document.getElementById('view-list').classList.toggle('hidden', view !== 'list');
             document.getElementById('view-calendar').classList.toggle('hidden', view !== 'calendar');
-            document.getElementById('btn-view-list').className = view === 'list' ? "px-6 py-2 rounded-xl text-sm font-bold transition view-btn-active" : "px-6 py-2 rounded-xl text-sm font-bold transition view-btn-inactive";
-            document.getElementById('btn-view-calendar').className = view === 'calendar' ? "px-6 py-2 rounded-xl text-sm font-bold transition view-btn-active" : "px-6 py-2 rounded-xl text-sm font-bold transition view-btn-inactive";
         }
 
         function showToast(m) {
@@ -178,14 +219,12 @@
             setTimeout(() => t.className = "", 3000);
         }
 
-        // Cargar link guardado al iniciar
         window.onload = () => {
-            const savedUrl = localStorage.getItem('saved_sheet_url');
-            if (savedUrl) {
-                document.getElementById('sheetUrl').value = savedUrl;
+            const url = localStorage.getItem('saved_sheet_url');
+            if (url) {
+                document.getElementById('sheetUrl').value = url;
                 syncFromSheets();
             }
-            initIcons();
         };
     </script>
 </body>
