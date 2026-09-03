@@ -4,6 +4,7 @@ import { useEditorStore } from '../../store/useEditorStore'
 import { EXPORT_PROFILES, EXPORT_PROFILE_ORDER } from '../../ffmpeg/profiles'
 import { runExport } from '../../ffmpeg/runExport'
 import Slider from '../ui/Slider'
+import Toggle from '../ui/Toggle'
 
 export default function ExportTab() {
   const file = useEditorStore((s) => s.file)
@@ -11,11 +12,13 @@ export default function ExportTab() {
   const transform = useEditorStore((s) => s.transform)
   const audio = useEditorStore((s) => s.audio)
   const color = useEditorStore((s) => s.color)
+  const text = useEditorStore((s) => s.text)
   const exportSettings = useEditorStore((s) => s.exportSettings)
   const processing = useEditorStore((s) => s.processing)
   const setExportProfile = useEditorStore((s) => s.setExportProfile)
   const setCrf = useEditorStore((s) => s.setCrf)
   const setReduction = useEditorStore((s) => s.setReduction)
+  const setFastEncode = useEditorStore((s) => s.setFastEncode)
   const setProcessing = useEditorStore((s) => s.setProcessing)
   const setResult = useEditorStore((s) => s.setResult)
   const [showAdvanced, setShowAdvanced] = useState(false)
@@ -28,7 +31,7 @@ export default function ExportTab() {
   const startExport = async () => {
     setProcessing({ status: 'loading-engine', progress: 0, error: null })
     try {
-      const editorState = { transform, audio, color, exportSettings }
+      const editorState = { transform, audio, color, text, exportSettings }
       const { blob } = await runExport({
         file,
         duration,
@@ -83,34 +86,42 @@ export default function ExportTab() {
       </button>
 
       {showAdvanced && (
-        <div className="rounded-2xl bg-neutral-800/60 px-4 py-1">
-          {profile.mode === 'crf' ? (
-            <Slider
-              label="Calidad (CRF)"
-              value={crf}
-              min={profile.crfRange[0]}
-              max={profile.crfRange[1]}
-              step={1}
-              defaultValue={profile.defaultCrf}
-              onChange={setCrf}
-            />
-          ) : (
-            <Slider
-              label="Reducción objetivo"
-              value={reduction}
-              min={profile.reductionRange[0]}
-              max={profile.reductionRange[1]}
-              step={0.05}
-              defaultValue={profile.defaultReduction}
-              formatValue={(v) => `-${Math.round(v * 100)}%`}
-              onChange={setReduction}
-            />
-          )}
-          <p className="pb-3 text-xs text-neutral-500">
-            {profile.mode === 'crf'
-              ? 'CRF más bajo = mayor calidad y peso. Rango recomendado: 23-26.'
-              : 'Porcentaje de reducción de peso respecto al archivo original.'}
-          </p>
+        <div className="space-y-2.5">
+          <Toggle
+            label="Exportación rápida"
+            description="Codifica más rápido; el archivo puede pesar algo más"
+            checked={exportSettings.fastEncode}
+            onChange={setFastEncode}
+          />
+          <div className="rounded-2xl bg-neutral-800/60 px-4 py-1">
+            {profile.mode === 'crf' ? (
+              <Slider
+                label="Calidad (CRF)"
+                value={crf}
+                min={profile.crfRange[0]}
+                max={profile.crfRange[1]}
+                step={1}
+                defaultValue={profile.defaultCrf}
+                onChange={setCrf}
+              />
+            ) : (
+              <Slider
+                label="Reducción objetivo"
+                value={reduction}
+                min={profile.reductionRange[0]}
+                max={profile.reductionRange[1]}
+                step={0.05}
+                defaultValue={profile.defaultReduction}
+                formatValue={(v) => `-${Math.round(v * 100)}%`}
+                onChange={setReduction}
+              />
+            )}
+            <p className="pb-3 text-xs text-neutral-500">
+              {profile.mode === 'crf'
+                ? 'CRF más bajo = mayor calidad y peso. Rango recomendado: 23-26.'
+                : 'Porcentaje de reducción de peso respecto al archivo original.'}
+            </p>
+          </div>
         </div>
       )}
 

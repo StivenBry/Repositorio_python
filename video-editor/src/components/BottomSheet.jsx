@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { ChevronUp, Scissors, SlidersHorizontal, Palette, Download } from 'lucide-react'
+import { ChevronUp, Scissors, Type, SlidersHorizontal, Palette, Download } from 'lucide-react'
 import { useEditorStore } from '../store/useEditorStore'
 import TransformTab from './tabs/TransformTab'
+import TextTab from './tabs/TextTab'
 import AudioTab from './tabs/AudioTab'
 import ColorTab from './tabs/ColorTab'
 import ExportTab from './tabs/ExportTab'
@@ -10,6 +11,7 @@ const PEEK_HEIGHT = 128
 const HANDLE_HEIGHT = 22
 const TABS = [
   { id: 'transform', label: 'Transformar', icon: Scissors },
+  { id: 'text', label: 'Texto', icon: Type },
   { id: 'audio', label: 'Audio', icon: SlidersHorizontal },
   { id: 'color', label: 'Color', icon: Palette },
   { id: 'export', label: 'Exportar', icon: Download },
@@ -97,7 +99,7 @@ export default function BottomSheet() {
         <span className="h-1.5 w-10 rounded-full bg-neutral-600" />
       </button>
 
-      <nav className="grid shrink-0 grid-cols-4 gap-1 px-2">
+      <nav className="grid shrink-0 grid-cols-5 gap-1 px-1">
         {TABS.map(({ id, label, icon: Icon }) => {
           const active = activeTab === id
           return (
@@ -124,6 +126,7 @@ export default function BottomSheet() {
 
       <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 pb-6 pt-1">
         {activeTab === 'transform' && <TransformTab />}
+        {activeTab === 'text' && <TextTab />}
         {activeTab === 'audio' && <AudioTab />}
         {activeTab === 'color' && <ColorTab />}
         {activeTab === 'export' && <ExportTab />}

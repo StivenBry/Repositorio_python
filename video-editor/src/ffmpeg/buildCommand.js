@@ -3,11 +3,22 @@ import { EXPORT_PROFILES } from './profiles'
 
 export const INPUT_NAME = 'input.mp4'
 export const OUTPUT_NAME = 'output.mp4'
+export const FONT_REGULAR_NAME = 'DejaVuSans.ttf'
+export const FONT_BOLD_NAME = 'DejaVuSans-Bold.ttf'
+export const CAPTION_NAME = 'caption.txt'
+
+function escapeDrawtextColon(value) {
+  // Only `:` and `'` are meaningful inside a single drawtext option value
+  // (commas are already one level up, at the filtergraph join). The caption
+  // text itself never goes through here — it's read from a file instead.
+  return String(value).replace(/:/g, '\\:').replace(/'/g, "\\'")
+}
 
 // Builds the -vf / -af filter chains from the editor's edit state.
-// Order: color correction -> flip -> subtle zoom crop -> speed (video pts).
+// Order: color correction -> flip -> subtle zoom crop -> speed (video pts)
+// -> text overlay (drawn last so it's never mirrored/zoomed/cropped away).
 // Audio: pitch shift (resample trick, tempo-compensated) -> overall speed -> 3-band EQ.
-export function buildFilters({ transform, audio, color }) {
+export function buildFilters({ transform, audio, color, text }) {
   const vf = []
   const af = []
 
@@ -33,6 +44,25 @@ export function buildFilters({ transform, audio, color }) {
   const speed = clamp(transform.speed, 0.5, 2)
   if (speed !== 1) {
     vf.push(`setpts=PTS/${speed.toFixed(4)}`)
+  }
+
+  if (text?.content?.trim()) {
+    const size = clamp(text.size, 2, 20)
+    const x = clamp(text.x, 0, 100)
+    const y = clamp(text.y, 0, 100)
+    const colorHex = /^#[0-9a-fA-F]{6}$/.test(text.color) ? text.color.slice(1) : 'ffffff'
+    const fontFile = text.bold ? FONT_BOLD_NAME : FONT_REGULAR_NAME
+    const parts = [
+      `fontfile=${escapeDrawtextColon(fontFile)}`,
+      `textfile=${escapeDrawtextColon(CAPTION_NAME)}`,
+      `fontsize=h*${(size / 100).toFixed(4)}`,
+      `fontcolor=0x${colorHex}`,
+      `x=(w*${(x / 100).toFixed(4)}-text_w/2)`,
+      `y=(h*${(y / 100).toFixed(4)}-text_h/2)`,
+      'line_spacing=4',
+    ]
+    if (text.box) parts.push('box=1', 'boxcolor=black@0.45', 'boxborderw=10')
+    vf.push(`drawtext=${parts.join(':')}`)
   }
 
   const pitchFactor = 1 + clamp(audio.pitch, -6, 6) / 100
@@ -64,6 +94,7 @@ export function buildExportPlan({ state, probe, fileSize }) {
   const speed = clamp(state.transform.speed, 0.5, 2)
   const { vf, af } = buildFilters(state)
   const hasAudio = probe.hasAudio !== false
+  const hasText = !!state.text?.content?.trim()
 
   if (profile.maxWidth) {
     vf.push(`scale='min(${profile.maxWidth},iw)':-2`)
@@ -75,7 +106,8 @@ export function buildExportPlan({ state, probe, fileSize }) {
   if (vf.length) args.push('-vf', vf.join(','))
   if (hasAudio && af.length) args.push('-af', af.join(','))
 
-  args.push('-c:v', 'libx264', '-preset', 'veryfast', '-pix_fmt', 'yuv420p')
+  const preset = state.exportSettings.fastEncode ? 'ultrafast' : 'veryfast'
+  args.push('-c:v', 'libx264', '-preset', preset, '-pix_fmt', 'yuv420p')
 
   let videoBitrateKbps = null
   if (profile.mode === 'bitrate') {
@@ -121,5 +153,5 @@ export function buildExportPlan({ state, probe, fileSize }) {
     OUTPUT_NAME,
   )
 
-  return { args, videoBitrateKbps, hasAudio }
+  return { args, videoBitrateKbps, hasAudio, hasText }
 }

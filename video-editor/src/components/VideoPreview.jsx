@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Play, TriangleAlert } from 'lucide-react'
 import { useEditorStore } from '../store/useEditorStore'
+import TextOverlay from './TextOverlay'
 
 export default function VideoPreview() {
   const fileURL = useEditorStore((s) => s.fileURL)
@@ -9,6 +10,7 @@ export default function VideoPreview() {
   const audioMute = useEditorStore((s) => s.audio.mute)
   const setDuration = useEditorStore((s) => s.setDuration)
   const videoRef = useRef(null)
+  const containerRef = useRef(null)
   const [playing, setPlaying] = useState(false)
   const [previewError, setPreviewError] = useState(false)
 
@@ -45,7 +47,11 @@ export default function VideoPreview() {
   }
 
   return (
-    <div className="relative flex flex-1 items-center justify-center overflow-hidden bg-black">
+    <div
+      ref={containerRef}
+      data-testid="preview-container"
+      className="relative flex flex-1 items-center justify-center overflow-hidden bg-black"
+    >
       {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
       <video
         ref={videoRef}
@@ -93,6 +99,8 @@ export default function VideoPreview() {
           </span>
         </button>
       )}
+
+      <TextOverlay containerRef={containerRef} />
 
       <p className="pointer-events-none absolute left-3 top-3 rounded-full bg-black/40 px-2.5 py-1 text-[10px] font-medium text-neutral-300 backdrop-blur">
         Vista previa aproximada

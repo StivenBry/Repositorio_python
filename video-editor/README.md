@@ -55,9 +55,12 @@ Filtros aplicados:
 | Pitch shift | `asetrate` + `aresample` + `atempo` compensado (cambia el tono sin alterar la duración) |
 | Ecualizador | `bass` / `equalizer` (medios) / `treble` |
 | Color | `eq=brightness:contrast:saturation` |
+| Texto superpuesto | `drawtext` (ver abajo) |
 | Metadatos | `-map_metadata -1 -map_chapters -1` + `-fflags/-flags +bitexact` (elimina GPS, autor, cámara, capítulos y pistas de datos ocultas; solo persisten campos estructurales obligatorios del contenedor MP4, no identificables) |
 
-La vista previa en pantalla es una **aproximación** con CSS (`transform`/`filter`) y `playbackRate` sobre el `<video>` nativo — instantánea, pero no ejecuta FFmpeg hasta exportar. El pitch/EQ de audio no tiene preview en vivo (requeriría un grafo Web Audio aparte); se escucha en el archivo exportado.
+`drawtext` va **al final** de la cadena de filtros de video (después de flip/zoom/color) para que el texto nunca salga espejado ni recortado por esos ajustes. Usa `textfile=` en vez de `text=` — el contenido se escribe a un archivo en el sistema de archivos virtual de FFmpeg (`runExport.js`) y se lee tal cual, byte a byte, evitando por completo el escapado de `:`, `,`, comillas y acentos que exigiría pasar el texto inline en el filtro. La fuente (`public/fonts/DejaVuSans(-Bold).ttf`, licencia Bitstream Vera — permite redistribución) también se escribe al FS virtual antes de codificar, porque FFmpeg.wasm no tiene acceso a las fuentes del sistema operativo. Tamaño y posición se calculan como expresiones (`fontsize=h*pct`, `x=(w*pct-text_w/2)`) para que escalen con la resolución real de salida, no con píxeles fijos.
+
+La vista previa en pantalla es una **aproximación** con CSS (`transform`/`filter`) y `playbackRate` sobre el `<video>` nativo — instantánea, pero no ejecuta FFmpeg hasta exportar. El texto es la excepción: la pestaña "Texto" renderiza un `<div>` arrastrable sobre el video usando la **misma fuente DejaVu Sans** (vía `@font-face`) para que la vista previa case con el resultado real. Mientras esa pestaña está activa, el texto se dibuja con `z-index` por encima del panel inferior — si no, con la posición por defecto (cerca del borde inferior, la típica para subtítulos) quedaría tapado por el panel expandido y sería imposible arrastrarlo. El pitch/EQ de audio no tiene preview en vivo (requeriría un grafo Web Audio aparte); se escucha en el archivo exportado.
 
 ### Perfiles de exportación (`src/ffmpeg/profiles.js`)
 
@@ -67,6 +70,8 @@ La vista previa en pantalla es una **aproximación** con CSS (`transform`/`filte
 
 Los tres usan H.264 (`libx264`) + AAC, `-movflags +faststart` y CRF en el rango 23-26 recomendado (perfil "Mismo peso") o configurable en "Ajustes avanzados".
 
+**Exportación rápida** (toggle en "Ajustes avanzados"): cambia `-preset` de `veryfast` a `ultrafast`. FFmpeg.wasm corre en un solo hilo dentro del navegador, así que el preset x264 es la palanca de velocidad disponible sin tocar el hosting (ver nota de `core-mt` arriba) — codifica notablemente más rápido a costa de comprimir algo menos eficiente para el mismo CRF/bitrate objetivo (archivo ligeramente más grande).
+
 ## Notas de compatibilidad
 
 - Algunos navegadores (sobre todo builds de Chromium sin códecs propietarios, sea en Linux) no pueden **previsualizar** H.264 en el `<video>` nativo. La app lo detecta y muestra un aviso — la edición y exportación **no dependen del códec del navegador** (FFmpeg.wasm trae los suyos), así que siguen funcionando igual.
@@ -75,11 +80,13 @@ Los tres usan H.264 (`libx264`) + AAC, `-movflags +faststart` y CRF en el rango 
 ## Estructura
 
 ```
+public/
+  fonts/           DejaVu Sans (regular + bold) para drawtext, bundleadas — no CDN
 src/
   ffmpeg/          motor FFmpeg.wasm, probing, construcción de comandos, perfiles
   store/           estado global (zustand)
   components/
-    tabs/          Transformar / Audio / Color / Exportar
+    tabs/          Transformar / Texto / Audio / Color / Exportar
     ui/            Slider, Toggle
   utils/           formato de bytes/tiempo
 ```

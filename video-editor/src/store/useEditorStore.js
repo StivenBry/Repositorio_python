@@ -3,7 +3,8 @@ import { create } from 'zustand'
 const defaultTransform = { flip: false, zoom: 0, speed: 1 }
 const defaultAudio = { pitch: 0, bass: 0, mid: 0, treble: 0, mute: false }
 const defaultColor = { brightness: 0, contrast: 0, saturation: 0 }
-const defaultExportSettings = { profile: 'same', crf: null, reduction: null }
+const defaultText = { content: '', x: 50, y: 85, size: 6, color: '#ffffff', bold: true, box: true }
+const defaultExportSettings = { profile: 'same', crf: null, reduction: null, fastEncode: false }
 const defaultProcessing = { status: 'idle', progress: 0, stage: '', error: null }
 
 export const useEditorStore = create((set, get) => ({
@@ -17,6 +18,7 @@ export const useEditorStore = create((set, get) => ({
   transform: { ...defaultTransform },
   audio: { ...defaultAudio },
   color: { ...defaultColor },
+  text: { ...defaultText },
   exportSettings: { ...defaultExportSettings },
 
   processing: { ...defaultProcessing },
@@ -32,6 +34,7 @@ export const useEditorStore = create((set, get) => ({
       transform: { ...defaultTransform },
       audio: { ...defaultAudio },
       color: { ...defaultColor },
+      text: { ...defaultText },
       exportSettings: { ...defaultExportSettings },
       processing: { ...defaultProcessing },
       result: null,
@@ -51,6 +54,7 @@ export const useEditorStore = create((set, get) => ({
       transform: { ...defaultTransform },
       audio: { ...defaultAudio },
       color: { ...defaultColor },
+      text: { ...defaultText },
       exportSettings: { ...defaultExportSettings },
       processing: { ...defaultProcessing },
       result: null,
@@ -66,20 +70,27 @@ export const useEditorStore = create((set, get) => ({
   updateTransform: (partial) => set((s) => ({ transform: { ...s.transform, ...partial } })),
   updateAudio: (partial) => set((s) => ({ audio: { ...s.audio, ...partial } })),
   updateColor: (partial) => set((s) => ({ color: { ...s.color, ...partial } })),
+  updateText: (partial) => set((s) => ({ text: { ...s.text, ...partial } })),
 
   setExportProfile: (profile) =>
     set((s) => ({ exportSettings: { ...s.exportSettings, profile, crf: null, reduction: null } })),
   setCrf: (crf) => set((s) => ({ exportSettings: { ...s.exportSettings, crf } })),
   setReduction: (reduction) => set((s) => ({ exportSettings: { ...s.exportSettings, reduction } })),
+  setFastEncode: (fastEncode) => set((s) => ({ exportSettings: { ...s.exportSettings, fastEncode } })),
 
   resetEdits: () =>
-    set({ transform: { ...defaultTransform }, audio: { ...defaultAudio }, color: { ...defaultColor } }),
+    set({
+      transform: { ...defaultTransform },
+      audio: { ...defaultAudio },
+      color: { ...defaultColor },
+      text: { ...defaultText },
+    }),
 
   setProcessing: (partial) => set((s) => ({ processing: { ...s.processing, ...partial } })),
   setResult: (result) => set({ result }),
 
   hasEdits: () => {
-    const { transform, audio, color } = get()
+    const { transform, audio, color, text } = get()
     return (
       transform.flip ||
       transform.zoom !== 0 ||
@@ -91,7 +102,8 @@ export const useEditorStore = create((set, get) => ({
       audio.mute ||
       color.brightness !== 0 ||
       color.contrast !== 0 ||
-      color.saturation !== 0
+      color.saturation !== 0 ||
+      text.content.trim() !== ''
     )
   },
 }))
