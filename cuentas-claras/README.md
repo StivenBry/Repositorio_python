@@ -19,8 +19,9 @@ La app tiene dos pestañas.
 **Registrar** — para anotar rápido:
 
 - Tipo en un selector de tres botones: gasto, ingreso o ahorro.
-- Monto con teclado numérico en pantalla; en el PC también sirve el teclado físico
-  (dígitos, retroceso, Esc para borrar, Enter para guardar).
+- Monto con el teclado del propio dispositivo: el campo se enfoca solo al entrar
+  y usa `inputmode="numeric"`, así que en el celular sale el teclado numérico. Los
+  miles se agrupan mientras se escribe y Enter guarda.
 - Categoría con botones grandes, del mismo color que usa el resto de la app.
   "Otra…" abre un campo de texto para categorías nuevas.
 - Fecha y descripción quedan plegadas: por defecto es hoy sin nota.
