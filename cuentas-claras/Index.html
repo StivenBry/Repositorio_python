@@ -214,18 +214,90 @@ table.mov td.acciones{text-align:right;padding-right:0;}
   .mov-cat .sub-desc{display:block;width:100%;font-size:11px;color:var(--ink-muted);padding-left:13px;}
 }
 
-/* ---------- formulario ---------- */
-.add-form{
-  display:none;grid-template-columns:repeat(6,1fr);gap:12px;padding:15px;
-  margin-bottom:15px;background:var(--surface-2);border-radius:10px;
+/* ---------- pestañas ---------- */
+.tabs{
+  display:flex;gap:5px;background:var(--surface-2);padding:4px;
+  border-radius:10px;margin-bottom:18px;max-width:320px;
 }
-.add-form.open{display:grid;}
-@media (max-width:760px){.add-form{grid-template-columns:repeat(2,1fr);}}
-.field{display:flex;flex-direction:column;gap:4px;min-width:0;}
-.field label{font-size:10.5px;color:var(--ink-muted);text-transform:uppercase;letter-spacing:.04em;}
-.field.wide{grid-column:span 2;}
-.add-actions{grid-column:1/-1;display:flex;gap:10px;justify-content:flex-end;}
-.form-msg{grid-column:1/-1;font-size:12.5px;color:var(--critical);min-height:16px;}
+.tabs button{
+  flex:1;padding:9px 6px;border:none;background:transparent;border-radius:7px;
+  font-size:13.5px;font-weight:600;color:var(--ink-soft);cursor:pointer;
+}
+.tabs button.active{background:var(--surface);color:var(--ink);box-shadow:0 1px 2px rgba(18,32,25,0.08);}
+@media (max-width:760px){
+  .tabs{
+    position:fixed;left:0;right:0;bottom:0;z-index:20;margin:0;border-radius:0;
+    max-width:none;padding:6px 12px calc(6px + env(safe-area-inset-bottom, 0px));
+    border-top:1px solid var(--line);background:var(--surface);gap:8px;
+  }
+  .tabs button{padding:11px 6px;}
+  .tabs button.active{background:var(--accent-soft);color:var(--accent);box-shadow:none;}
+  .wrap{padding-bottom:84px;}
+}
+
+/* ---------- registrar ---------- */
+.reg{max-width:520px;margin:0 auto;}
+.seg{display:flex;gap:6px;background:var(--surface-2);padding:4px;border-radius:9px;margin-bottom:16px;}
+.seg button{
+  flex:1;padding:9px 6px;border:none;background:transparent;border-radius:6px;
+  font-size:13px;font-weight:600;color:var(--ink-soft);cursor:pointer;
+}
+.seg button.active{background:var(--surface);color:var(--ink);}
+.monto-display{
+  font-size:40px;font-weight:600;text-align:center;padding:14px 0 18px;
+  letter-spacing:-0.02em;line-height:1.1;
+}
+.monto-display.vacio{color:var(--ink-muted);}
+.reg-label{
+  font-size:11px;color:var(--ink-muted);text-transform:uppercase;
+  letter-spacing:.05em;margin:0 0 8px;
+}
+.cat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px;margin-bottom:18px;}
+.cat-btn{
+  display:flex;align-items:center;gap:9px;padding:13px 12px;text-align:left;
+  border:1px solid var(--line);border-radius:10px;background:var(--surface);
+  color:var(--ink);font-size:13.5px;font-family:var(--font-body);cursor:pointer;
+}
+.cat-btn .swatch{width:12px;height:12px;border-radius:50%;flex:none;}
+.cat-btn.sel{box-shadow:inset 0 0 0 2px var(--sel);border-color:transparent;font-weight:600;}
+.cat-otra{width:100%;margin-bottom:18px;}
+.keypad{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:18px;}
+.keypad button{
+  padding:15px 0;border:none;border-radius:10px;background:var(--surface-2);
+  color:var(--ink);font-family:var(--font-body);font-size:19px;font-weight:600;cursor:pointer;
+}
+.keypad button:hover{filter:brightness(0.97);}
+.keypad button.aux{color:var(--ink-soft);font-size:16px;}
+.mas-opciones{
+  display:block;width:100%;margin-bottom:14px;padding:9px;border:1px dashed var(--line);
+  border-radius:9px;background:transparent;color:var(--ink-soft);
+  font-family:var(--font-body);font-size:12.5px;cursor:pointer;
+}
+.mas-opciones:hover{color:var(--ink);}
+.reg-extra{display:flex;flex-wrap:wrap;gap:12px;margin-bottom:18px;}
+.reg-extra .campo{flex:1;min-width:150px;display:flex;flex-direction:column;gap:4px;}
+.reg-extra label{font-size:11px;color:var(--ink-muted);text-transform:uppercase;letter-spacing:.04em;}
+@media (max-width:760px){
+  .brand h1{font-size:24px;}
+  .monto-display{font-size:36px;padding:10px 0 14px;}
+  .cat-grid{grid-template-columns:repeat(2,1fr);gap:7px;margin-bottom:14px;}
+  .cat-btn{padding:11px 10px;}
+  .keypad{gap:7px;margin-bottom:14px;}
+  .keypad button{padding:11px 0;}
+  /* En la pestaña de registro el encabezado sobra: la barra ya dice dónde estás. */
+  body.registrando header.top{display:none;}
+  body.registrando .wrap{padding-top:14px;}
+}
+.btn-guardar{width:100%;padding:14px;font-size:15px;border-radius:11px;}
+.reg-msg{font-size:12.5px;color:var(--critical);min-height:17px;margin-top:8px;text-align:center;}
+.toast{
+  position:fixed;left:50%;transform:translateX(-50%);bottom:96px;
+  background:var(--ink);color:var(--paper);padding:10px 20px;border-radius:99px;
+  font-size:13.5px;font-weight:600;opacity:0;pointer-events:none;
+  transition:opacity .25s;z-index:50;
+}
+.toast.show{opacity:1;}
+@media (min-width:761px){.toast{bottom:28px;}}
 
 /* ---------- estados ---------- */
 .loading{padding:60px 20px;text-align:center;color:var(--ink-muted);font-size:14px;}
@@ -254,6 +326,12 @@ table.mov td.acciones{text-align:right;padding-right:0;}
   <div class="loading" id="loading">Cargando tu libro de cuentas…</div>
 
   <div id="app" style="display:none">
+    <nav class="tabs" id="tabs" aria-label="Secciones">
+      <button type="button" class="active" data-vista="resumen">Resumen</button>
+      <button type="button" data-vista="registrar">Registrar</button>
+    </nav>
+
+    <div id="vista-resumen">
     <section class="kpis" id="kpis" aria-label="Resumen del mes"></section>
 
     <div class="layout">
@@ -270,50 +348,7 @@ table.mov td.acciones{text-align:right;padding-right:0;}
               <h2>Movimientos</h2>
               <p class="sub">Se guardan directo en tu hoja de cálculo</p>
             </div>
-            <button class="btn" id="toggleForm" type="button">+ Nuevo</button>
-          </div>
-
-          <div class="add-form" id="addForm">
-            <div class="field">
-              <label for="f-tipo">Tipo</label>
-              <select id="f-tipo">
-                <option value="gasto">Gasto</option>
-                <option value="ingreso">Ingreso</option>
-                <option value="ahorro">Ahorro</option>
-              </select>
-            </div>
-            <div class="field" id="f-cat-field">
-              <label for="f-categoria">Categoría</label>
-              <select id="f-categoria"></select>
-            </div>
-            <div class="field" id="f-catfree-field" style="display:none">
-              <label for="f-categoria-libre">Categoría</label>
-              <input id="f-categoria-libre" type="text" placeholder="salario, freelance…">
-            </div>
-            <div class="field" id="f-direccion-field" style="display:none">
-              <label for="f-direccion">Movimiento</label>
-              <select id="f-direccion">
-                <option value="in">Depósito</option>
-                <option value="out">Retiro</option>
-              </select>
-            </div>
-            <div class="field">
-              <label for="f-monto">Monto (COP)</label>
-              <input id="f-monto" type="number" min="1" step="1" inputmode="numeric" placeholder="15000">
-            </div>
-            <div class="field">
-              <label for="f-fecha">Fecha</label>
-              <input id="f-fecha" type="date">
-            </div>
-            <div class="field wide">
-              <label for="f-desc">Descripción (opcional)</label>
-              <input id="f-desc" type="text" placeholder="Ej. mercado, plan celular…">
-            </div>
-            <div class="form-msg" id="formMsg"></div>
-            <div class="add-actions">
-              <button class="btn ghost" id="cancelForm" type="button">Cancelar</button>
-              <button class="btn" id="submitForm" type="button">Guardar movimiento</button>
-            </div>
+            <button class="btn" id="irRegistrar" type="button">+ Nuevo</button>
           </div>
 
           <div class="mov-scroll">
@@ -349,8 +384,70 @@ table.mov td.acciones{text-align:right;padding-right:0;}
     </div>
 
     <p class="foot-note">Base de datos: "Mi libro de cuentas" en Google Sheets · se actualiza solo cada 30 segundos</p>
+    </div>
+
+    <div id="vista-registrar" style="display:none">
+      <div class="reg">
+        <div class="card">
+          <div class="seg" id="segTipo">
+            <button type="button" class="active" data-tipo="gasto">Gasto</button>
+            <button type="button" data-tipo="ingreso">Ingreso</button>
+            <button type="button" data-tipo="ahorro">Ahorro</button>
+          </div>
+
+          <div class="monto-display vacio" id="montoDisplay">$ 0</div>
+
+          <div id="bloqueCategoria">
+            <p class="reg-label">Categoría</p>
+            <div class="cat-grid" id="catGrid"></div>
+            <input type="text" id="catOtra" class="cat-otra" placeholder="Escribe la categoría…" style="display:none">
+          </div>
+
+          <div id="bloqueDireccion" style="display:none">
+            <p class="reg-label">Tipo de movimiento</p>
+            <div class="seg" id="segDireccion">
+              <button type="button" class="active" data-dir="in">Depósito</button>
+              <button type="button" data-dir="out">Retiro</button>
+            </div>
+          </div>
+
+          <div class="keypad" id="keypad">
+            <button type="button" data-k="1">1</button>
+            <button type="button" data-k="2">2</button>
+            <button type="button" data-k="3">3</button>
+            <button type="button" data-k="4">4</button>
+            <button type="button" data-k="5">5</button>
+            <button type="button" data-k="6">6</button>
+            <button type="button" data-k="7">7</button>
+            <button type="button" data-k="8">8</button>
+            <button type="button" data-k="9">9</button>
+            <button type="button" class="aux" data-k="C">C</button>
+            <button type="button" data-k="0">0</button>
+            <button type="button" class="aux" data-k="del" aria-label="Borrar">⌫</button>
+          </div>
+
+          <button type="button" class="mas-opciones" id="masOpciones">Hoy · agregar fecha o nota</button>
+
+          <div class="reg-extra" id="regExtra" style="display:none">
+            <div class="campo">
+              <label for="regFecha">Fecha</label>
+              <input type="date" id="regFecha">
+            </div>
+            <div class="campo">
+              <label for="regDesc">Descripción (opcional)</label>
+              <input type="text" id="regDesc" placeholder="Ej. mercado, plan celular…">
+            </div>
+          </div>
+
+          <button class="btn btn-guardar" id="btnGuardar" type="button">Guardar gasto</button>
+          <div class="reg-msg" id="regMsg"></div>
+        </div>
+      </div>
+    </div>
   </div>
 </div>
+
+<div class="toast" id="toast">Guardado ✓</div>
 
 <script>
 /* ---------------- categorías y colores ---------------- */
@@ -659,71 +756,205 @@ function refrescar(){
   srv('cargarDatos').then(aplicar).catch(fallo);
 }
 
-/* ---------------- formulario ---------------- */
-function llenarCategorias(){
-  var sel = document.getElementById('f-categoria');
-  var actual = sel.value;
-  sel.innerHTML = categorias().map(function(c){
-    return '<option value="' + escapeHtml(c.key) + '">' + escapeHtml(c.label) + '</option>';
-  }).join('');
-  if(actual) sel.value = actual;
-}
-function sincronizarCampos(){
-  var tipo = document.getElementById('f-tipo').value;
-  document.getElementById('f-cat-field').style.display = tipo === 'gasto' ? '' : 'none';
-  document.getElementById('f-catfree-field').style.display = tipo === 'ingreso' ? '' : 'none';
-  document.getElementById('f-direccion-field').style.display = tipo === 'ahorro' ? '' : 'none';
-}
+/* ---------------- estado de registro ---------------- */
+var reg = {tipo:'gasto', digitos:'', categoria:'', direccion:'in'};
+var vistaActual = 'resumen';
 
-document.getElementById('toggleForm').addEventListener('click', function(){
-  var form = document.getElementById('addForm');
-  form.classList.toggle('open');
-  if(form.classList.contains('open')){
-    llenarCategorias();
-    document.getElementById('f-fecha').value = hoyISO();
+function montoActual(){ return Number(reg.digitos || '0'); }
+
+/* ---------------- pestañas ---------------- */
+function irA(vista){
+  vistaActual = vista;
+  document.body.classList.toggle('registrando', vista === 'registrar');
+  document.getElementById('vista-resumen').style.display = vista === 'resumen' ? '' : 'none';
+  document.getElementById('vista-registrar').style.display = vista === 'registrar' ? '' : 'none';
+  Array.prototype.forEach.call(document.querySelectorAll('#tabs button'), function(b){
+    b.classList.toggle('active', b.getAttribute('data-vista') === vista);
+  });
+  if(vista === 'registrar'){
+    var f = document.getElementById('regFecha');
+    if(!f.value) f.value = hoyISO();
+    renderRegistrar();
   }
+  window.scrollTo(0, 0);
+}
+Array.prototype.forEach.call(document.querySelectorAll('#tabs button'), function(b){
+  b.addEventListener('click', function(){ irA(b.getAttribute('data-vista')); });
 });
-document.getElementById('cancelForm').addEventListener('click', function(){
-  document.getElementById('addForm').classList.remove('open');
-  document.getElementById('formMsg').textContent = '';
+document.getElementById('irRegistrar').addEventListener('click', function(){ irA('registrar'); });
+
+/* ---------------- registrar ---------------- */
+/** Para gastos usa las categorías del libro; para ingresos, las ya vistas. */
+function categoriasDe(tipo){
+  if(tipo === 'gasto') return categorias();
+  var vistas = {};
+  estado.movimientos.forEach(function(m){
+    if(m.tipo === 'ingreso' && m.categoria) vistas[m.categoria] = true;
+  });
+  var keys = Object.keys(vistas).sort();
+  if(!keys.length) keys = ['salario'];
+  return keys.map(function(k){ return {key:k, label:titulo(k), varname:null}; });
+}
+
+function renderMonto(){
+  var el = document.getElementById('montoDisplay');
+  var v = montoActual();
+  el.textContent = money(v);
+  el.classList.toggle('vacio', v === 0);
+}
+
+function renderCatBotones(){
+  var cont = document.getElementById('catGrid');
+  var partes = categoriasDe(reg.tipo).map(function(c){
+    var color = c.varname ? 'var(' + c.varname + ')' : 'var(--accent)';
+    return '<button type="button" class="cat-btn' + (reg.categoria === c.key ? ' sel' : '') + '" ' +
+           'data-cat="' + escapeHtml(c.key) + '" style="--sel:' + color + '">' +
+           '<span class="swatch" style="background:' + color + '"></span>' + escapeHtml(c.label) + '</button>';
+  });
+  partes.push('<button type="button" class="cat-btn' + (reg.categoria === '__otra' ? ' sel' : '') + '" ' +
+    'data-cat="__otra" style="--sel:var(--ink-muted)">' +
+    '<span class="swatch" style="background:var(--ink-muted)"></span>Otra…</button>');
+  cont.innerHTML = partes.join('');
+
+  Array.prototype.forEach.call(cont.querySelectorAll('.cat-btn'), function(b){
+    b.addEventListener('click', function(){
+      reg.categoria = b.getAttribute('data-cat');
+      renderRegistrar();
+      if(reg.categoria === '__otra') document.getElementById('catOtra').focus();
+    });
+  });
+}
+
+function renderRegistrar(){
+  Array.prototype.forEach.call(document.querySelectorAll('#segTipo button'), function(b){
+    b.classList.toggle('active', b.getAttribute('data-tipo') === reg.tipo);
+  });
+  Array.prototype.forEach.call(document.querySelectorAll('#segDireccion button'), function(b){
+    b.classList.toggle('active', b.getAttribute('data-dir') === reg.direccion);
+  });
+
+  var esAhorro = reg.tipo === 'ahorro';
+  document.getElementById('bloqueCategoria').style.display = esAhorro ? 'none' : '';
+  document.getElementById('bloqueDireccion').style.display = esAhorro ? '' : 'none';
+  document.getElementById('catOtra').style.display = (!esAhorro && reg.categoria === '__otra') ? '' : 'none';
+  if(!esAhorro) renderCatBotones();
+
+  renderMonto();
+  renderOpciones();
+  document.getElementById('btnGuardar').textContent = 'Guardar ' + reg.tipo;
+}
+
+/** La línea de "más opciones" resume fecha y nota sin tener que abrirlas. */
+function renderOpciones(){
+  var fecha = document.getElementById('regFecha').value || hoyISO();
+  var desc = document.getElementById('regDesc').value.trim();
+  document.getElementById('masOpciones').textContent =
+    (fecha === hoyISO() ? 'Hoy' : shortDate(fecha)) + ' · ' + (desc || 'agregar fecha o nota');
+}
+
+document.getElementById('masOpciones').addEventListener('click', function(){
+  var extra = document.getElementById('regExtra');
+  var abierto = extra.style.display !== 'none';
+  extra.style.display = abierto ? 'none' : '';
+  if(!abierto) document.getElementById('regDesc').focus();
 });
-document.getElementById('f-tipo').addEventListener('change', sincronizarCampos);
-sincronizarCampos();
+document.getElementById('regFecha').addEventListener('change', renderOpciones);
+document.getElementById('regDesc').addEventListener('input', renderOpciones);
 
-document.getElementById('submitForm').addEventListener('click', function(){
-  var boton = this;
-  var tipo = document.getElementById('f-tipo').value;
-  var monto = Number(document.getElementById('f-monto').value);
-  var fecha = document.getElementById('f-fecha').value || hoyISO();
-  var descripcion = document.getElementById('f-desc').value.trim();
-  var msg = document.getElementById('formMsg');
+function tecla(k){
+  if(k === 'C') reg.digitos = '';
+  else if(k === 'del') reg.digitos = reg.digitos.slice(0, -1);
+  else if(/^[0-9]$/.test(k)){
+    if(reg.digitos.length >= 10) return;
+    if(reg.digitos === '' && k === '0') return;
+    reg.digitos += k;
+  }
+  renderMonto();
+}
 
-  if(!monto || monto <= 0){ msg.textContent = 'Ingresa un monto válido.'; return; }
-
-  var categoria = '', direccion = '';
-  if(tipo === 'gasto') categoria = document.getElementById('f-categoria').value;
-  if(tipo === 'ingreso') categoria = document.getElementById('f-categoria-libre').value.trim().toLowerCase();
-  if(tipo === 'ahorro') direccion = document.getElementById('f-direccion').value;
-
-  msg.style.color = 'var(--ink-muted)';
-  msg.textContent = 'Guardando en la hoja…';
-  boton.disabled = true;
-
-  guardar(srv('agregarMovimiento', {
-    tipo:tipo, monto:monto, categoria:categoria, direccion:direccion,
-    meta:'general', descripcion:descripcion, fecha:fecha
-  })).then(function(){
-    msg.textContent = '';
-    boton.disabled = false;
-    document.getElementById('addForm').classList.remove('open');
-    document.getElementById('f-monto').value = '';
-    document.getElementById('f-desc').value = '';
-  }).catch(function(){
-    msg.style.color = 'var(--critical)';
-    msg.textContent = 'No se pudo guardar. Revisa la conexión e intenta de nuevo.';
-    boton.disabled = false;
+Array.prototype.forEach.call(document.querySelectorAll('#keypad button'), function(b){
+  b.addEventListener('click', function(){ tecla(b.getAttribute('data-k')); });
+});
+Array.prototype.forEach.call(document.querySelectorAll('#segTipo button'), function(b){
+  b.addEventListener('click', function(){
+    reg.tipo = b.getAttribute('data-tipo');
+    reg.categoria = '';
+    renderRegistrar();
   });
 });
+Array.prototype.forEach.call(document.querySelectorAll('#segDireccion button'), function(b){
+  b.addEventListener('click', function(){
+    reg.direccion = b.getAttribute('data-dir');
+    renderRegistrar();
+  });
+});
+
+/* El teclado físico también escribe el monto en el PC. */
+document.addEventListener('keydown', function(e){
+  if(vistaActual !== 'registrar') return;
+  var t = e.target;
+  if(t && ['INPUT','SELECT','TEXTAREA'].indexOf(t.tagName) !== -1) return;
+  if(/^[0-9]$/.test(e.key)){ tecla(e.key); e.preventDefault(); }
+  else if(e.key === 'Backspace'){ tecla('del'); e.preventDefault(); }
+  else if(e.key === 'Escape'){ tecla('C'); }
+  else if(e.key === 'Enter'){ e.preventDefault(); guardarMovimiento(); }
+});
+
+function toast(txt){
+  var el = document.getElementById('toast');
+  el.textContent = txt;
+  el.classList.add('show');
+  clearTimeout(el._t);
+  el._t = setTimeout(function(){ el.classList.remove('show'); }, 1900);
+}
+
+function guardarMovimiento(){
+  var msg = document.getElementById('regMsg');
+  var btn = document.getElementById('btnGuardar');
+  var monto = montoActual();
+
+  if(monto <= 0){ msg.textContent = 'Ingresa el monto con el teclado.'; return; }
+
+  var categoria = '', direccion = '';
+  if(reg.tipo === 'ahorro'){
+    direccion = reg.direccion;
+  } else {
+    categoria = reg.categoria === '__otra'
+      ? document.getElementById('catOtra').value.trim().toLowerCase()
+      : reg.categoria;
+    if(!categoria){ msg.textContent = 'Elige una categoría.'; return; }
+  }
+
+  msg.textContent = '';
+  btn.disabled = true;
+  btn.textContent = 'Guardando…';
+
+  guardar(srv('agregarMovimiento', {
+    tipo: reg.tipo,
+    monto: monto,
+    categoria: categoria,
+    direccion: direccion,
+    meta: 'general',
+    descripcion: document.getElementById('regDesc').value.trim(),
+    fecha: document.getElementById('regFecha').value || hoyISO()
+  })).then(function(){
+    btn.disabled = false;
+    reg.digitos = '';
+    document.getElementById('regDesc').value = '';
+    document.getElementById('regExtra').style.display = 'none';
+    if(reg.categoria === '__otra'){
+      document.getElementById('catOtra').value = '';
+      reg.categoria = '';
+    }
+    renderRegistrar();
+    toast('Guardado ' + money(monto));
+  }).catch(function(){
+    btn.disabled = false;
+    renderRegistrar();
+    msg.textContent = 'No se pudo guardar. Revisa la conexión e intenta de nuevo.';
+  });
+}
+document.getElementById('btnGuardar').addEventListener('click', guardarMovimiento);
 
 /* ---------------- arranque ---------------- */
 srv('cargarDatos').then(aplicar).catch(fallo);

@@ -6,12 +6,28 @@ celular ven exactamente lo mismo sin necesidad de sincronizar nada a mano.
 
 ## Qué hace
 
-- Resumen del mes: ingresos, gastos, ahorro y disponible.
+La app tiene dos pestañas.
+
+**Resumen** — para consultar:
+
+- Ingresos, gastos, ahorro y disponible del mes.
 - Gasto por categoría en barras, ordenado de mayor a menor.
 - Presupuestos con semáforo (verde / amarillo / rojo) según cuánto se lleva del tope.
 - Meta de ahorro con barra de progreso y objetivo editable.
-- Alta y baja de movimientos sin abrir la hoja de cálculo.
-- Se refresca solo cada 30 segundos y al volver a la pestaña.
+- Lista de movimientos, con opción de eliminar.
+
+**Registrar** — para anotar rápido:
+
+- Tipo en un selector de tres botones: gasto, ingreso o ahorro.
+- Monto con teclado numérico en pantalla; en el PC también sirve el teclado físico
+  (dígitos, retroceso, Esc para borrar, Enter para guardar).
+- Categoría con botones grandes, del mismo color que usa el resto de la app.
+  "Otra…" abre un campo de texto para categorías nuevas.
+- Fecha y descripción quedan plegadas: por defecto es hoy sin nota.
+- En el celular ocupa una sola pantalla, sin desplazarse.
+
+Todo se guarda directo en la hoja y la pantalla se refresca sola cada 30 segundos
+y al volver a la pestaña.
 
 ## Estructura de hoja que espera
 
