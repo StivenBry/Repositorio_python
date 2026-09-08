@@ -14,7 +14,9 @@
  * Las claves de API viven unicamente aqui, en variables de entorno.
  */
 
+import fs from 'node:fs';
 import path from 'node:path';
+import { pathToFileURL } from 'node:url';
 import express from 'express';
 
 import { config, publicConfig, startupWarnings, ROOT_DIR } from './config.js';
@@ -62,7 +64,17 @@ export async function start() {
   const app = createApp();
   const server = app.listen(config.port, () => {
     const info = publicConfig();
-    logger.info(`AI Voice Studio escuchando en http://localhost:${config.port}`);
+    const url = `http://localhost:${config.port}`;
+
+    // La aplicacion no abre el navegador sola: se indica la direccion de forma
+    // bien visible para que baste con pulsarla o copiarla.
+    process.stdout.write(
+      `\n  AI Voice Studio esta funcionando.\n` +
+        `  Abre esta direccion en tu navegador:  ${url}\n` +
+        `  (para detenerlo, pulsa Ctrl + C en esta ventana)\n\n`,
+    );
+
+    logger.info(`Escuchando en ${url}`);
     logger.info(`Motor de voz: ${info.ttsProvider}${info.ttsConfigured ? '' : ' (sin credenciales)'}`);
     logger.info(`Motor de IA:  ${info.aiProvider}${info.aiConfigured ? '' : ' (sin credenciales)'}`);
     for (const warning of startupWarnings()) logger.warn(warning);
@@ -90,8 +102,29 @@ export async function start() {
   return server;
 }
 
-// Solo arranca si el archivo se ejecuta directamente (permite importarlo en tests).
-if (process.argv[1] && import.meta.url === `file://${path.resolve(process.argv[1])}`) {
+/**
+ * Indica si este archivo se esta ejecutando directamente (`node server/index.js`)
+ * o si lo esta importando otro modulo, como las pruebas.
+ *
+ * La comparacion DEBE hacerse convirtiendo la ruta a URL con `pathToFileURL`.
+ * Concatenar "file://" con la ruta funciona en Linux y macOS, pero no en
+ * Windows: alli `process.argv[1]` es "C:\...\index.js" mientras que
+ * `import.meta.url` es "file:///C:/.../index.js", nunca coinciden y el
+ * servidor se cerraba en silencio nada mas arrancar.
+ */
+function isMainModule() {
+  const entry = process.argv[1];
+  if (!entry) return false;
+  try {
+    // realpath resuelve enlaces simbolicos (por ejemplo /tmp en macOS),
+    // que es como Node normaliza la URL del modulo.
+    return import.meta.url === pathToFileURL(fs.realpathSync(entry)).href;
+  } catch {
+    return import.meta.url === pathToFileURL(path.resolve(entry)).href;
+  }
+}
+
+if (isMainModule()) {
   start().catch((error) => {
     logger.error('No se pudo arrancar el servidor', { message: error.message });
     process.exit(1);

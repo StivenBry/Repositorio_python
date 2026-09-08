@@ -203,7 +203,7 @@ export function publicConfig() {
       maxProjectNameChars: config.limits.maxProjectNameChars,
     },
     defaultAudioFormat: config.audio.defaultFormat,
-    version: '1.0.0',
+    version: '1.0.1',
   };
 }
 

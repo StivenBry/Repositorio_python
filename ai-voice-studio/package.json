@@ -1,6 +1,6 @@
 {
   "name": "ai-voice-studio",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "private": true,
   "description": "Estudio web para convertir guiones en narracion con voz natural y expresiva (TTS + interpretacion inteligente).",
   "type": "module",

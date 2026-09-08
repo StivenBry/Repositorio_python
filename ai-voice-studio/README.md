@@ -75,9 +75,29 @@ npm install
 npm start
 ```
 
-Abre **<http://localhost:3000>**. Ya puedes escribir un guion y generar audio.
+Verás este mensaje:
+
+```
+  AI Voice Studio esta funcionando.
+  Abre esta direccion en tu navegador:  http://localhost:3000
+  (para detenerlo, pulsa Ctrl + C en esta ventana)
+```
+
+**Ahora abre tú <http://localhost:3000> en el navegador.** La aplicación no lo
+abre sola: `npm start` solo enciende el servidor y se queda funcionando en esa
+ventana de la terminal.
+
+Dos cosas que conviene saber:
+
+- **La terminal se queda "colgada" a propósito.** Mientras el servidor funciona,
+  no vuelve a aparecer el símbolo del sistema. Es lo normal. Para pararlo,
+  `Ctrl` + `C`.
+- **Si necesitas escribir más comandos**, abre una segunda ventana de terminal;
+  no cierres la primera o el servidor se detendrá.
 
 > Para desarrollo, `npm run dev` reinicia el servidor al guardar cambios.
+> Si el puerto 3000 está ocupado, arráncalo en otro: `PORT=3005 npm start`
+> (en PowerShell: `$env:PORT=3005; npm start`).
 
 ### ¿Y sin claves de API?
 
@@ -288,7 +308,7 @@ ai-voice-studio/
 │       │
 │       └── audio/               utilidades de audio (WAV, MP3, conversión)
 │
-├── tests/                       55 pruebas automáticas
+├── tests/                       56 pruebas automáticas
 └── docs/                        documentación ampliada
 ```
 
@@ -417,10 +437,11 @@ Recomendaciones:
 npm test
 ```
 
-55 pruebas automáticas que cubren marcadores, segmentación, estadísticas,
+56 pruebas automáticas que cubren marcadores, segmentación, estadísticas,
 análisis de interpretación, optimizador, plan de narración, generación de SSML,
-codificación de audio, el recorrido completo de la API y los casos de error y
-seguridad. No necesitan claves ni conexión a internet.
+codificación de audio, el arranque real del servidor, el recorrido completo de
+la API y los casos de error y seguridad. No necesitan claves ni conexión a
+internet.
 
 ---
 
@@ -428,6 +449,9 @@ seguridad. No necesitan claves ni conexión a internet.
 
 | Síntoma | Causa y solución |
 |---|---|
+| `npm start` no muestra nada y vuelve el símbolo del sistema | El servidor no llegó a arrancar. Comprueba tu versión con `node --version`: hace falta **20.11 o superior**. Si usas una versión anterior a la 1.0.1 de esta aplicación, actualízala: había un fallo que impedía arrancar en Windows. |
+| Arranca, pero «no se abre nada» | `npm start` **no abre el navegador**. Abre tú <http://localhost:3000>. La ventana de la terminal debe quedarse funcionando. |
+| `EADDRINUSE: address already in use` | El puerto 3000 ya está ocupado por otro programa. Usa otro: `PORT=3005 npm start` (PowerShell: `$env:PORT=3005; npm start`). |
 | «El servicio de voz no está configurado» | Falta la clave del proveedor elegido en `.env`, o el archivo no se ha guardado. Reinicia el servidor tras editarlo. |
 | La voz suena robótica | Estás en el motor de demostración (etiqueta amarilla arriba). Configura un proveedor real en `.env`. |
 | «No es posible entregar el audio en formato WAV» | El audio se generó en MP3 y no hay ffmpeg para convertirlo. La aplicación lo regenera en WAV automáticamente al pulsar *Descargar*; para convertir sin regenerar, instala ffmpeg. |
