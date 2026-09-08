@@ -1,0 +1,21 @@
+# Dependencias
+node_modules/
+
+# Variables de entorno (NUNCA subir claves al repositorio)
+.env
+.env.local
+.env.*.local
+
+# Datos generados en tiempo de ejecucion (audios y proyectos).
+# Se ignora el contenido pero se conserva la carpeta con .gitkeep: una regla
+# "data/" a secas excluiria el directorio entero y la excepcion no funcionaria.
+data/*
+!data/.gitkeep
+
+# Logs y temporales
+*.log
+npm-debug.log*
+.DS_Store
+Thumbs.db
+coverage/
+tmp/
