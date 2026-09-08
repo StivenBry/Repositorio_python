@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="description" content="AI Voice Studio: convierte tu guion en una narracion con voz natural y expresiva. Elige la voz, el estilo y el ritmo, escucha el resultado y descargalo en MP3 o WAV.">
+  <meta name="color-scheme" content="dark light">
+  <title>AI Voice Studio</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/styles/base.css">
+  <link rel="stylesheet" href="/styles/components.css">
+  <link rel="stylesheet" href="/styles/layout.css">
+</head>
+<body>
+  <a class="skip-link" href="#editor">Ir al editor de guion</a>
+
+  <div class="app">
+    <!-- ================= BARRA SUPERIOR ================= -->
+    <header class="topbar">
+      <div class="brand">
+        <span class="brand__logo" aria-hidden="true">🎙️</span>
+        <div class="brand__text">
+          <span class="brand__name">AI Voice Studio</span>
+          <span class="brand__tagline">Del guion a la voz</span>
+        </div>
+      </div>
+
+      <div class="topbar__project">
+        <label class="sr-only" for="project-name">Nombre del proyecto</label>
+        <input id="project-name" class="project-name" type="text" maxlength="80"
+               placeholder="Nombre del proyecto" value="Narracion sin titulo"
+               autocomplete="off" spellcheck="false">
+        <span id="save-state" class="save-state" role="status"></span>
+      </div>
+
+      <div class="topbar__actions">
+        <span id="provider-badge" class="badge badge--muted" title="Motor de voz activo">Cargando…</span>
+        <button id="btn-projects" class="btn btn--ghost" type="button" aria-expanded="false" aria-controls="projects-drawer">
+          <span aria-hidden="true">📁</span><span class="btn__label">Proyectos</span>
+        </button>
+        <button id="btn-theme" class="btn btn--icon" type="button" title="Cambiar entre modo claro y oscuro" aria-label="Cambiar tema">
+          <span aria-hidden="true">🌙</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- ================= CUERPO ================= -->
+    <main class="layout">
+      <!-- ---------- COLUMNA IZQUIERDA: GUION ---------- -->
+      <section class="column column--script" aria-label="Guion">
+        <article class="card card--editor">
+          <header class="card__head">
+            <h2 class="card__title"><span aria-hidden="true">📝</span> Guion</h2>
+            <div class="card__actions">
+              <button id="btn-markers" class="btn btn--tiny btn--ghost" type="button">Marcadores</button>
+              <button id="btn-clear" class="btn btn--tiny btn--ghost" type="button">Limpiar</button>
+            </div>
+          </header>
+
+          <label class="sr-only" for="editor">Escribe o pega tu guion</label>
+          <textarea id="editor" class="editor" spellcheck="true" rows="14"
+            placeholder="Escribe o pega aqui tu guion.
+
+Puedes usar marcadores para dirigir la interpretacion:
+[PAUSA]  [PAUSA LARGA]  [ENFASIS]texto[/ENFASIS]  [EMOCION: FELIZ]  [TONO: MISTERIOSO]"></textarea>
+
+          <div id="editor-warning" class="inline-note inline-note--warn" hidden></div>
+
+          <!-- Estadisticas del guion (requisito 12) -->
+          <div class="stats" id="stats" aria-live="polite">
+            <div class="stat"><span class="stat__value" id="stat-words">0</span><span class="stat__label">Palabras</span></div>
+            <div class="stat"><span class="stat__value" id="stat-chars">0</span><span class="stat__label">Caracteres</span></div>
+            <div class="stat"><span class="stat__value" id="stat-duration">0 s</span><span class="stat__label">Duracion estimada</span></div>
+            <div class="stat"><span class="stat__value" id="stat-paragraphs">0</span><span class="stat__label">Parrafos</span></div>
+            <div class="stat"><span class="stat__value" id="stat-sentences">0</span><span class="stat__label">Frases</span></div>
+            <div class="stat"><span class="stat__value" id="stat-wpm">0</span><span class="stat__label">Palabras / minuto</span></div>
+          </div>
+
+          <div class="editor__footer">
+            <div class="editor__limit"><span id="chars-used">0</span> / <span id="chars-max">8000</span> caracteres</div>
+            <div class="editor__buttons">
+              <button id="btn-optimize" class="btn btn--secondary" type="button">
+                <span aria-hidden="true">✨</span> Optimizar guion con IA
+              </button>
+              <button id="btn-generate" class="btn btn--primary btn--lg" type="button">
+                <span aria-hidden="true">🎧</span> Generar narracion
+              </button>
+            </div>
+          </div>
+        </article>
+
+        <!-- Progreso de generacion (requisito 8) -->
+        <article class="card card--progress" id="progress-card" hidden>
+          <h2 class="card__title"><span aria-hidden="true">⚙️</span> Generando tu narracion</h2>
+          <ol class="progress" id="progress-steps" role="status" aria-live="polite"></ol>
+          <div class="progress__bar"><div class="progress__fill" id="progress-fill"></div></div>
+        </article>
+
+        <!-- Reproductor (requisito 8) -->
+        <article class="card card--player" id="player-card" hidden>
+          <header class="card__head">
+            <h2 class="card__title"><span aria-hidden="true">🔊</span> Narracion lista</h2>
+            <span id="player-meta" class="card__hint"></span>
+          </header>
+
+          <div class="player">
+            <button id="btn-play" class="player__play" type="button" aria-label="Reproducir">
+              <span class="player__icon" id="play-icon" aria-hidden="true">▶</span>
+            </button>
+
+            <div class="player__main">
+              <div class="player__seek">
+                <input id="seek" class="range range--seek" type="range" min="0" max="1000" value="0"
+                       aria-label="Posicion de la reproduccion">
+              </div>
+              <div class="player__times">
+                <span id="time-current">0:00</span>
+                <span id="time-total">0:00</span>
+              </div>
+            </div>
+
+            <div class="player__side">
+              <button id="btn-restart" class="btn btn--icon" type="button" title="Reiniciar" aria-label="Reiniciar">
+                <span aria-hidden="true">↺</span>
+              </button>
+              <div class="player__volume">
+                <svg class="icon" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false">
+                  <path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4Zm12.5 3a4.5 4.5 0 0 0-2.5-4v8a4.5 4.5 0 0 0 2.5-4Zm-2.5 7.9a8 8 0 0 0 0-15.8v2.06a6 6 0 0 1 0 11.68v2.06Z"/>
+                </svg>
+                <input id="volume" class="range range--volume" type="range" min="0" max="100" value="100"
+                       aria-label="Volumen de reproduccion">
+              </div>
+            </div>
+          </div>
+
+          <div class="player__download">
+            <div class="segmented" role="group" aria-label="Formato de descarga">
+              <button class="segmented__item is-active" type="button" data-format="mp3">MP3</button>
+              <button class="segmented__item" type="button" data-format="wav">WAV</button>
+            </div>
+            <button id="btn-download" class="btn btn--primary" type="button">
+              <span aria-hidden="true">⬇</span> Descargar
+            </button>
+            <button id="btn-save-project" class="btn btn--ghost" type="button">
+              <span aria-hidden="true">💾</span> Guardar proyecto
+            </button>
+          </div>
+
+          <div id="player-notes" class="notes"></div>
+        </article>
+
+        <!-- Interpretacion inteligente (requisito 5) -->
+        <article class="card card--analysis" id="analysis-card" hidden>
+          <header class="card__head">
+            <h2 class="card__title"><span aria-hidden="true">🧠</span> Interpretacion del guion</h2>
+            <span id="analysis-provider" class="card__hint"></span>
+          </header>
+          <p id="analysis-summary" class="analysis__summary"></p>
+          <div id="analysis-list" class="analysis"></div>
+        </article>
+      </section>
+
+      <!-- ---------- COLUMNA DERECHA: CONFIGURACION ---------- -->
+      <aside class="column column--settings" aria-label="Configuracion de la narracion">
+        <!-- Voz (requisito 2) -->
+        <article class="card">
+          <header class="card__head">
+            <h2 class="card__title"><span aria-hidden="true">🗣️</span> Configuracion de voz</h2>
+            <span id="provider-badge-panel" class="badge badge--muted" title="Motor de voz activo">…</span>
+          </header>
+
+          <div class="field">
+            <label class="field__label" for="voice-gender">Tipo de voz</label>
+            <div class="segmented segmented--full" id="voice-gender" role="group" aria-label="Filtrar por tipo de voz">
+              <button class="segmented__item is-active" type="button" data-gender="all">Todas</button>
+              <button class="segmented__item" type="button" data-gender="female">Femenina</button>
+              <button class="segmented__item" type="button" data-gender="male">Masculina</button>
+            </div>
+          </div>
+
+          <div class="field">
+            <label class="field__label" for="voice">Voz</label>
+            <select id="voice" class="select"></select>
+          </div>
+
+          <div class="voice-card" id="voice-card">
+            <p class="voice-card__empty">Selecciona una voz para ver sus caracteristicas.</p>
+          </div>
+
+          <button id="btn-test-voice" class="btn btn--secondary btn--block" type="button">
+            <span aria-hidden="true">▶</span> Probar voz
+          </button>
+          <audio id="preview-audio" preload="none"></audio>
+        </article>
+
+        <!-- Estilo (requisito 3) -->
+        <article class="card">
+          <header class="card__head">
+            <h2 class="card__title"><span aria-hidden="true">🎭</span> Estilo de narracion</h2>
+          </header>
+          <div class="chips" id="style-list" role="radiogroup" aria-label="Estilo de narracion"></div>
+
+          <label class="switch" for="auto-interpret">
+            <input id="auto-interpret" type="checkbox" checked>
+            <span class="switch__track" aria-hidden="true"><span class="switch__thumb"></span></span>
+            <span class="switch__text">
+              <strong>Interpretacion automatica</strong>
+              <small>La IA decide como leer cada frase: preguntas, enfasis, pausas y cambios de emocion.</small>
+            </span>
+          </label>
+        </article>
+
+        <!-- Controles (requisito 4) -->
+        <article class="card">
+          <header class="card__head">
+            <h2 class="card__title"><span aria-hidden="true">🎛️</span> Controles de voz</h2>
+            <button id="btn-reset-controls" class="btn btn--tiny btn--ghost" type="button">Restablecer</button>
+          </header>
+          <div class="sliders" id="sliders"></div>
+          <p id="capability-note" class="inline-note" hidden></p>
+        </article>
+
+        <!-- Shorts (requisito 11) -->
+        <article class="card">
+          <header class="card__head">
+            <h2 class="card__title"><span aria-hidden="true">📱</span> Modo Shorts / Reels / TikTok</h2>
+          </header>
+          <label class="switch" for="shorts-mode">
+            <input id="shorts-mode" type="checkbox">
+            <span class="switch__track" aria-hidden="true"><span class="switch__thumb"></span></span>
+            <span class="switch__text">
+              <strong>Analizar como video corto</strong>
+              <small>Revisa el gancho, el ritmo y la duracion para formato vertical.</small>
+            </span>
+          </label>
+          <div id="shorts-panel" class="shorts" hidden></div>
+        </article>
+      </aside>
+    </main>
+  </div>
+
+  <!-- ================= PROYECTOS (requisito 10) ================= -->
+  <div class="drawer" id="projects-drawer" hidden>
+    <div class="drawer__backdrop" data-close-drawer></div>
+    <aside class="drawer__panel" role="dialog" aria-modal="true" aria-labelledby="drawer-title">
+      <header class="drawer__head">
+        <h2 id="drawer-title" class="card__title"><span aria-hidden="true">📁</span> Mis proyectos</h2>
+        <button class="btn btn--icon" type="button" data-close-drawer aria-label="Cerrar">
+          <span aria-hidden="true">✕</span>
+        </button>
+      </header>
+      <div class="drawer__body">
+        <button id="btn-new-project" class="btn btn--secondary btn--block" type="button">
+          <span aria-hidden="true">＋</span> Nuevo proyecto
+        </button>
+        <ul id="projects-list" class="projects"></ul>
+      </div>
+    </aside>
+  </div>
+
+  <!-- ================= OPTIMIZADOR (requisito 7) ================= -->
+  <div class="modal" id="optimizer-modal" hidden>
+    <div class="modal__backdrop" data-close-modal></div>
+    <div class="modal__panel modal__panel--wide" role="dialog" aria-modal="true" aria-labelledby="optimizer-title">
+      <header class="modal__head">
+        <h2 id="optimizer-title" class="card__title"><span aria-hidden="true">✨</span> Guion optimizado</h2>
+        <button class="btn btn--icon" type="button" data-close-modal aria-label="Cerrar">
+          <span aria-hidden="true">✕</span>
+        </button>
+      </header>
+
+      <div class="modal__body">
+        <p class="modal__lead">
+          Compara las dos versiones. Tu guion original no se ha modificado:
+          solo se sustituira si pulsas <strong>Aplicar cambios</strong>.
+        </p>
+        <div class="diff">
+          <section class="diff__side">
+            <h3 class="diff__title">Guion original</h3>
+            <pre class="diff__text" id="diff-original"></pre>
+            <p class="diff__meta" id="diff-meta-original"></p>
+          </section>
+          <section class="diff__side diff__side--new">
+            <h3 class="diff__title">Guion optimizado</h3>
+            <pre class="diff__text" id="diff-optimized"></pre>
+            <p class="diff__meta" id="diff-meta-optimized"></p>
+          </section>
+        </div>
+        <div class="changes" id="optimizer-changes"></div>
+      </div>
+
+      <footer class="modal__foot">
+        <button id="btn-reject" class="btn btn--ghost" type="button" data-close-modal>Mantener el original</button>
+        <button id="btn-accept" class="btn btn--primary" type="button">Aplicar cambios</button>
+      </footer>
+    </div>
+  </div>
+
+  <!-- ================= AYUDA DE MARCADORES (requisito 6) ================= -->
+  <div class="modal" id="markers-modal" hidden>
+    <div class="modal__backdrop" data-close-modal></div>
+    <div class="modal__panel" role="dialog" aria-modal="true" aria-labelledby="markers-title">
+      <header class="modal__head">
+        <h2 id="markers-title" class="card__title"><span aria-hidden="true">🏷️</span> Marcadores de interpretacion</h2>
+        <button class="btn btn--icon" type="button" data-close-modal aria-label="Cerrar">
+          <span aria-hidden="true">✕</span>
+        </button>
+      </header>
+      <div class="modal__body">
+        <p class="modal__lead">
+          Escribelos dentro del guion para dirigir la lectura.
+          <strong>No se pronuncian:</strong> se convierten en instrucciones para el motor de voz.
+          Pulsa uno para insertarlo donde tengas el cursor.
+        </p>
+        <ul class="markers" id="markers-list"></ul>
+      </div>
+    </div>
+  </div>
+
+  <div id="toasts" class="toasts" role="status" aria-live="polite"></div>
+
+  <script type="module" src="/js/main.js"></script>
+</body>
+</html>

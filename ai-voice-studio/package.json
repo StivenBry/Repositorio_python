@@ -1,0 +1,30 @@
+{
+  "name": "ai-voice-studio",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Estudio web para convertir guiones en narracion con voz natural y expresiva (TTS + interpretacion inteligente).",
+  "type": "module",
+  "engines": {
+    "node": ">=20.11.0"
+  },
+  "main": "server/index.js",
+  "scripts": {
+    "start": "node server/index.js",
+    "dev": "node --watch server/index.js",
+    "check": "node --check server/index.js",
+    "test": "node --test"
+  },
+  "keywords": [
+    "tts",
+    "text-to-speech",
+    "narracion",
+    "voiceover",
+    "ai"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.124.0",
+    "@breezystack/lamejs": "^1.2.7",
+    "express": "^4.22.2"
+  }
+}
