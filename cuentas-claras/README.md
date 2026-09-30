@@ -72,8 +72,21 @@ Google.
 
 ### En el celular
 
-Abre la URL en Chrome, menú de tres puntos → **Agregar a pantalla de inicio**.
-Queda como un ícono más, y al abrirla lee el estado actual de la hoja.
+Abre la URL en Chrome, menú de tres puntos → **Agregar a pantalla de inicio**. Eso
+crea un acceso directo con su ícono.
+
+Ojo: es un acceso directo, no una app instalada. Se abre dentro del navegador, con
+la barra de direcciones a la vista. Chrome no ofrece **Instalar aplicación** aquí y
+no hay forma de lograrlo desde Apps Script: el HTML se sirve dentro de un iframe
+aislado en `googleusercontent.com`, mientras la página de arriba es el envoltorio de
+Google en `script.google.com`. Instalar una PWA exige un manifiesto y un service
+worker en esa página de arriba, que no controlamos — un `<link rel="manifest">`
+dentro del `Index.html` queda en el iframe y el navegador lo ignora.
+
+Para una app instalable de verdad habría que servir el frontend por fuera (por
+ejemplo GitHub Pages) y dejar Apps Script solo como API JSON, lo que obliga a
+publicar la implementación como "Cualquiera" y protegerla con un token en vez de
+con el inicio de sesión de Google.
 
 ## Notas
 
