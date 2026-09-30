@@ -13,8 +13,18 @@ La app tiene dos pestañas.
 - Ingresos, gastos, ahorro y disponible del mes.
 - Gasto por categoría en barras, ordenado de mayor a menor.
 - Presupuestos con semáforo (verde / amarillo / rojo) según cuánto se lleva del tope.
-- Meta de ahorro con barra de progreso y objetivo editable.
+- Meta de ahorro acumulada, con el aporte del mes en curso aparte.
 - Lista de movimientos, con opción de eliminar.
+
+### Qué se reinicia cada mes
+
+| | Se reinicia | Por qué |
+|---|---|---|
+| Ingresos, gastos, ahorro y disponible | Sí | Son el resumen del mes en curso. |
+| Gasto por categoría | Sí | Idem. |
+| Consumo de cada presupuesto | Sí | Los topes son mensuales; el tope en sí se conserva. |
+| Meta de ahorro | No | Cuenta todo el historial menos los retiros: es un colchón que se junta mes a mes. La línea "Este mes" sí muestra solo el aporte del mes. |
+| Lista de movimientos | No | Es el libro completo. |
 
 **Registrar** — para anotar rápido:
 

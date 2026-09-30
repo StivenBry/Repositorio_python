@@ -158,6 +158,8 @@ header.top{
 .meta-amounts .goal{font-size:12.5px;color:var(--ink-muted);}
 .meta-track{background:var(--surface-2);border-radius:5px;height:10px;overflow:hidden;margin-bottom:10px;}
 .meta-fill{height:100%;background:var(--accent);border-radius:5px;}
+.meta-mes{margin:0 0 12px;font-size:12.5px;color:var(--ink-soft);}
+.meta-mes strong{color:var(--ink);font-variant-numeric:tabular-nums;}
 .meta-edit{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--ink-soft);}
 .meta-edit input{width:112px;}
 .empty-note{font-size:12px;color:var(--ink-muted);margin-top:6px;}
@@ -376,7 +378,7 @@ input.monto-input:focus,input.monto-input:focus-visible{outline:none;}
 
         <div class="card">
           <h2 id="metaNombre">Meta de ahorro</h2>
-          <p class="sub">Ahorrado este mes frente a tu objetivo</p>
+          <p class="sub">Lo que llevas juntado frente a tu objetivo</p>
           <div id="metaBox"></div>
         </div>
       </div>
@@ -512,8 +514,12 @@ function catPorKey(){
 function movsDelMes(){
   var ahora = new Date();
   var clave = ahora.getFullYear() + '-' + String(ahora.getMonth()+1).padStart(2,'0');
-  var delMes = estado.movimientos.filter(function(m){ return String(m.fecha).slice(0,7) === clave; });
-  return delMes.length ? delMes : estado.movimientos;
+  // Un mes recién empezado vale cero de verdad: sin respaldo al historial,
+  // que hacía ver los datos del mes anterior como si fueran los de este.
+  return estado.movimientos.filter(function(m){ return String(m.fecha).slice(0,7) === clave; });
+}
+function nombreMes(){
+  return new Intl.DateTimeFormat('es-CO', {month:'long'}).format(new Date());
 }
 function totales(movs){
   var ingresos = 0, gastos = 0, ahorro = 0;
@@ -569,7 +575,14 @@ function renderKpis(){
   }).join('');
 }
 function renderCatChart(){
-  var sumas = porCategoria(movsDelMes());
+  var delMes = movsDelMes();
+  if(!delMes.length){
+    document.getElementById('catChart').innerHTML =
+      '<p class="empty-note">Todavía no hay movimientos en ' + escapeHtml(nombreMes()) +
+      '. El primero que registres aparece acá.</p>';
+    return;
+  }
+  var sumas = porCategoria(delMes);
   var filas = categorias().map(function(c){
     return {key:c.key, label:c.label, varname:c.varname, value: sumas[c.key] || 0};
   }).sort(function(a,b){ return b.value - a.value; });
@@ -632,8 +645,9 @@ function renderPresupuestos(){
   }
 }
 function renderMeta(){
-  var t = totales(movsDelMes());
-  var ahorrado = Math.max(0, t.ahorro);
+  // El colchón es acumulado: cuenta todo el historial, no solo el mes.
+  var ahorrado = Math.max(0, totales(estado.movimientos).ahorro);
+  var esteMes = totales(movsDelMes()).ahorro;
   var meta = metaGeneral();
   var objetivo = meta.objetivo || 0;
   document.getElementById('metaNombre').textContent = meta.nombre || 'Meta de ahorro';
@@ -642,6 +656,7 @@ function renderMeta(){
     '<div class="meta-amounts"><span class="now">' + money(ahorrado) + '</span>' +
     '<span class="goal">' + (objetivo > 0 ? 'de ' + money(objetivo) : 'sin objetivo definido') + '</span></div>' +
     '<div class="meta-track"><div class="meta-fill" style="width:' + pct + '%"></div></div>' +
+    '<p class="meta-mes">Este mes: <strong>' + money(esteMes) + '</strong></p>' +
     '<div class="meta-edit">Objetivo: $<input type="number" min="0" step="10000" inputmode="numeric" id="objetivoInput" value="' + objetivo + '">' +
     '<span class="saved-flag" id="metaSaved">guardado ✓</span></div>' +
     (objetivo <= 0 ? '<p class="empty-note">Sugerencia: empieza con un mes de gastos como primer colchón.</p>' : '');
