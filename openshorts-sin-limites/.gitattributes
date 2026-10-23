@@ -1,0 +1,5 @@
+# bin/ffmpeg runs inside the Linux container (it is mounted from this folder):
+# with Windows line endings it fails with "/bin/sh^M: not found". Keep it LF
+# whatever the checkout platform.
+bin/ffmpeg text eol=lf
+*.sh text eol=lf
