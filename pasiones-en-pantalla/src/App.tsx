@@ -13,6 +13,8 @@ const SearchPage = lazy(() => import('./pages/SearchPage'))
 const CategoryPage = lazy(() => import('./pages/CategoryPage'))
 const MyListPage = lazy(() => import('./pages/MyListPage'))
 const PrivacyPage = lazy(() => import('./pages/PrivacyPage'))
+const PlaylistPage = lazy(() => import('./pages/PlaylistPage'))
+const AdminPlaylistsPage = lazy(() => import('./pages/admin/AdminPlaylistsPage'))
 const AdminLoginPage = lazy(() => import('./pages/admin/AdminLoginPage'))
 const AdminLayout = lazy(() => import('./pages/admin/AdminLayout'))
 const AdminDashboardPage = lazy(() => import('./pages/admin/AdminDashboardPage'))
@@ -58,6 +60,7 @@ export default function App() {
         <Route path="categoria/:slug" element={<CategoryPage />} />
         <Route path="mi-lista" element={<MyListPage />} />
         <Route path="privacidad" element={<PrivacyPage />} />
+        <Route path="lista/:id" element={<PlaylistPage />} />
         <Route path="*" element={<NotFoundPage />} />
       </Route>
       <Route element={<PageTransition fade />}>
@@ -67,6 +70,7 @@ export default function App() {
           <Route index element={<AdminDashboardPage />} />
           <Route path="nuevo" element={<AdminVideoFormPage />} />
           <Route path="editar/:id" element={<AdminVideoFormPage />} />
+          <Route path="listas" element={<AdminPlaylistsPage />} />
         </Route>
       </Route>
     </Routes>

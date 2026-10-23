@@ -1,4 +1,4 @@
-import { Check, ChevronDown, Film, Play, Plus, RotateCcw, Share2 } from 'lucide-react'
+import { Check, ChevronDown, Film, ListVideo, Play, Plus, RotateCcw, Share2 } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { AdSlot } from '../components/AdSlot'
@@ -15,7 +15,7 @@ import { parseSource } from '../lib/media'
 import { usePageTitle } from '../lib/usePageTitle'
 import type { Video } from '../types'
 
-type Tab = 'related' | 'details'
+type Tab = 'playlist' | 'related' | 'details'
 
 export default function DetailPage() {
   const { id = '' } = useParams()
@@ -48,7 +48,11 @@ function Detail({ video, catalog }: { video: Video; catalog: Video[] }) {
   const [expanded, setExpanded] = useState(false)
   const [clamped, setClamped] = useState(false)
   const descriptionRef = useRef<HTMLParagraphElement>(null)
-  const [tab, setTab] = useState<Tab>('related')
+  const { getPlaylist, playlistItems } = useCatalog()
+  const playlist = getPlaylist(video.playlist_id)
+  const playlistVideos = playlist ? playlistItems(playlist.id) : []
+  const playlistIndex = playlistVideos.findIndex((v) => v.id === video.id)
+  const [tab, setTab] = useState<Tab>(playlistVideos.length ? 'playlist' : 'related')
   const inList = has(video.id)
   const scheduled = !isPublished(video.published_at)
 
@@ -113,6 +117,18 @@ function Detail({ video, catalog }: { video: Video; catalog: Video[] }) {
 
         <div className="gutter flex min-h-[88svh] flex-col justify-end pt-28 pb-10 lg:min-h-[92vh] lg:justify-center lg:pt-32">
           <div className="animate-rise-in max-w-3xl">
+            {playlist && playlistIndex >= 0 && (
+              <Link
+                to={`/lista/${playlist.id}`}
+                className="mb-3 inline-flex max-w-full items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-sm font-semibold text-white/90 backdrop-blur transition hover:bg-white/20"
+              >
+                <ListVideo className="size-4 shrink-0 text-brand" />
+                <span className="truncate">{playlist.title}</span>
+                <span className="shrink-0 text-white/60 tabular-nums">
+                  {playlistIndex + 1}/{playlistVideos.length}
+                </span>
+              </Link>
+            )}
             <div className="flex flex-wrap items-center gap-2.5">
               {video.is_top10 && <Top10Badge />}
               {video.is_exclusive && <ExclusiveChip />}
@@ -179,11 +195,12 @@ function Detail({ video, catalog }: { video: Video; catalog: Video[] }) {
       </section>
 
       <section className="gutter">
-        <div role="tablist" className="flex gap-2 border-b border-line">
+        <div role="tablist" className="scrollbar-none flex gap-2 overflow-x-auto border-b border-line">
           {(
             [
-              ['related', 'Más como esto'],
-              ['details', 'Detalles'],
+              ...(playlist && playlistVideos.length ? [['playlist', playlist.title] as const] : []),
+              ['related', 'Más como esto'] as const,
+              ['details', 'Detalles'] as const,
             ] as const
           ).map(([key, label]) => (
             <button
@@ -192,7 +209,9 @@ function Detail({ video, catalog }: { video: Video; catalog: Video[] }) {
               role="tab"
               aria-selected={tab === key}
               onClick={() => setTab(key)}
-              className={`relative px-4 py-4 text-lg font-semibold transition sm:text-xl ${tab === key ? 'text-white' : 'text-white/55 hover:text-white/80'}`}
+              className={`relative max-w-[60vw] shrink-0 truncate px-4 py-4 text-lg font-semibold whitespace-nowrap transition sm:max-w-sm sm:text-xl ${
+                tab === key ? 'text-white' : 'text-white/55 hover:text-white/80'
+              }`}
             >
               {label}
               <span
@@ -203,7 +222,25 @@ function Detail({ video, catalog }: { video: Video; catalog: Video[] }) {
         </div>
 
         <div key={tab} className="animate-fade-in pt-8" role="tabpanel">
-          {tab === 'related' ? (
+          {tab === 'playlist' && playlist ? (
+            <div>
+              <div className="grid grid-cols-1 gap-x-4 gap-y-7 min-[480px]:grid-cols-2 md:grid-cols-3 xl:grid-cols-4">
+                {playlistVideos.map((v, i) => (
+                  <LandscapeCard
+                    key={v.id}
+                    video={v}
+                    to={`/ver/${v.id}`}
+                    index={i + 1}
+                    current={v.id === video.id}
+                    subtitle={[v.category, formatDuration(v.duration_seconds)].filter(Boolean).join(' · ')}
+                  />
+                ))}
+              </div>
+              <Link to={`/lista/${playlist.id}`} className="mt-6 inline-flex items-center gap-2 font-semibold text-brand hover:underline">
+                Ver la lista completa →
+              </Link>
+            </div>
+          ) : tab === 'related' ? (
             related.length ? (
               <div className="grid grid-cols-1 gap-x-4 gap-y-7 min-[480px]:grid-cols-2 md:grid-cols-3 xl:grid-cols-4">
                 {related.map((v) => (

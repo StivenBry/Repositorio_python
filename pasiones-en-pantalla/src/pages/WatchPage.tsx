@@ -1,5 +1,5 @@
 import { Play, RotateCcw } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { Artwork } from '../components/Artwork'
 import { FullPageSpinner } from '../components/States'
@@ -10,11 +10,13 @@ import { isPublished } from '../lib/format'
 import { getProgress, saveProgress } from '../lib/localStore'
 import { usePageTitle } from '../lib/usePageTitle'
 
+const AUTOPLAY_SECONDS = 8
+
 export default function WatchPage() {
   const { id = '' } = useParams()
   const [params] = useSearchParams()
   const navigate = useNavigate()
-  const { getById, videos, loading } = useCatalog()
+  const { getById, videos, loading, getPlaylist, playlistItems } = useCatalog()
   const { session } = useAuth()
   const video = getById(id)
   const [ended, setEnded] = useState(false)
@@ -24,11 +26,36 @@ export default function WatchPage() {
   // Se calcula una sola vez por video para no saltar mientras se reproduce.
   const startAt = useMemo(() => (params.get('desde') === '0' ? 0 : (getProgress(id)?.t ?? 0)), [id]) // eslint-disable-line react-hooks/exhaustive-deps
 
+  // En una lista, lo siguiente es el próximo video de la lista; si no, uno de la misma categoría.
+  const playlist = getPlaylist(video?.playlist_id)
+  const playlistNext = useMemo(() => {
+    if (!video || !playlist) return undefined
+    const items = playlistItems(playlist.id)
+    const index = items.findIndex((v) => v.id === video.id)
+    return index >= 0 ? items[index + 1] : undefined
+  }, [video, playlist, playlistItems])
+
   const next = useMemo(() => {
     if (!video) return undefined
+    if (playlistNext) return playlistNext
     const pool = videos.filter((v) => v.id !== video.id)
     return pool.find((v) => v.category === video.category) ?? pool[0]
-  }, [videos, video])
+  }, [videos, video, playlistNext])
+
+  // Reproducción continua dentro de una lista: cuenta regresiva y pasa al siguiente.
+  const [countdown, setCountdown] = useState<number | null>(null)
+  useEffect(() => {
+    setCountdown(ended && playlistNext ? AUTOPLAY_SECONDS : null)
+  }, [ended, playlistNext])
+  useEffect(() => {
+    if (countdown === null || !playlistNext) return
+    if (countdown <= 0) {
+      navigate(`/ver/${playlistNext.id}?desde=0`)
+      return
+    }
+    const t = setTimeout(() => setCountdown((c) => (c === null ? null : c - 1)), 1000)
+    return () => clearTimeout(t)
+  }, [countdown, playlistNext, navigate])
 
   if (loading) return <div className="h-dvh bg-black"><FullPageSpinner /></div>
   if (!video || (!isPublished(video.published_at) && !session)) {
@@ -87,12 +114,26 @@ export default function WatchPage() {
                     </div>
                   </div>
                   <div className="p-4">
-                    <p className="text-xs font-semibold tracking-widest text-brand uppercase">A continuación</p>
+                    <p className="truncate text-xs font-semibold tracking-widest text-brand uppercase">
+                      {playlistNext && playlist ? `Siguiente en ${playlist.title}` : 'A continuación'}
+                    </p>
                     <p className="mt-1 truncate font-bold">{next.title}</p>
+                    {countdown !== null && (
+                      <p className="mt-1 text-sm text-muted" aria-live="polite">
+                        Empieza en {countdown} s
+                      </p>
+                    )}
                   </div>
                 </Link>
               )}
             </div>
+            {countdown !== null && (
+              <div className="mt-4 text-center">
+                <button type="button" onClick={() => setCountdown(null)} className="text-sm font-semibold text-white/70 underline-offset-2 hover:text-white hover:underline">
+                  Cancelar reproducción automática
+                </button>
+              </div>
+            )}
             <div className="mt-6 text-center">
               <button type="button" onClick={back} className="btn-ghost">
                 Volver

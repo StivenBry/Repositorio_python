@@ -7,13 +7,13 @@ import { EmptyState } from '../components/States'
 import { LandscapeCard, PosterCard } from '../components/VideoCard'
 import { VideoRow } from '../components/VideoRow'
 import { useCatalog } from '../context/CatalogContext'
-import { formatClock } from '../lib/format'
+import { formatClock, formatDuration } from '../lib/format'
 import { useMyList, useProgress } from '../lib/localStore'
 import { usePageTitle } from '../lib/usePageTitle'
 
 export default function HomePage() {
   usePageTitle()
-  const { videos, categories, loading, error, refresh } = useCatalog()
+  const { videos, categories, playlists, playlistItems, loading, error, refresh } = useCatalog()
   const progress = useProgress()
   const { ids: myListIds } = useMyList()
 
@@ -104,6 +104,17 @@ export default function HomePage() {
           ))}
         </VideoRow>
         <AdSlot className="gutter" />
+        {playlists.map((p) => {
+          const items = playlistItems(p.id)
+          if (!items.length) return null
+          return (
+            <VideoRow key={p.id} title={p.title} seeAllHref={`/lista/${p.id}`}>
+              {items.map((v, i) => (
+                <LandscapeCard key={v.id} video={v} inRow index={i + 1} subtitle={[v.category, formatDuration(v.duration_seconds)].filter(Boolean).join(' · ')} />
+              ))}
+            </VideoRow>
+          )
+        })}
         {myList.length > 0 && (
           <VideoRow title="Mi lista" seeAllHref="/mi-lista">
             {myList.map((v) => (

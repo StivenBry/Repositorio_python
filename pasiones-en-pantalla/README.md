@@ -21,6 +21,8 @@ React + Vite + Tailwind CSS en el frontend; **Supabase** para autenticación, ba
 - **Buscador dinámico**: resultados mientras escribes, sin importar tildes ni mayúsculas, con filtros por categoría y etiquetas populares.
 - **Reproductor propio**: play/pausa, barra de progreso con vista previa del tiempo, ±10 s, volumen, velocidad, imagen en imagen, pantalla completa y atajos de teclado. Reanuda donde lo dejaste.
 - Soporta **MP4/WebM**, **HLS (.m3u8)**, **YouTube**, **Vimeo**, **Google Drive** y **Dropbox**.
+- **Listas de reproducción** (capítulos de una novela, temporadas, colecciones): fila propia en el inicio, página
+  `/lista/:id`, pestaña en la ficha de cada video y paso automático al siguiente capítulo con cuenta regresiva.
 - Diseño responsivo (móvil, tablet, escritorio), animaciones suaves y transiciones entre páginas.
 
 **Panel de administración (`/admin`)**
@@ -30,6 +32,8 @@ React + Vite + Tailwind CSS en el frontend; **Supabase** para autenticación, ba
 - Miniatura vertical y portada horizontal: súbelas, pega un enlace o **captúralas de un fotograma del video**.
 - Título, descripción, categoría, etiquetas, clasificación, duración (detectada automáticamente), cinta, portada/Top 10/Exclusivo.
 - **Publicación programada**: con una fecha futura el video queda oculto al público hasta ese momento.
+- Asignar cada video a una **lista de reproducción** (o crear una nueva desde el mismo formulario) con su número de orden.
+- Página **Listas**: crear, renombrar, reordenar (subir/bajar), quitar videos y eliminar listas (los videos se conservan).
 - Editar y eliminar (también borra los archivos de Storage).
 
 ---
@@ -169,7 +173,10 @@ desactiva los anuncios "anclados" para que no tapen los controles del reproducto
 - Para capítulos largos o mucho tráfico, usa la opción **Enlace** del formulario con un servicio de streaming
   (Bunny Stream, Cloudflare Stream, Mux… que entregan **HLS .m3u8**), o enlaces de YouTube/Vimeo.
 - Formato recomendado para subir: **MP4 (H.264 + AAC)**, que se reproduce en todos los navegadores.
-- Google Drive: el archivo debe estar compartido como *"Cualquier persona con el enlace"*.
+- Google Drive: el archivo debe estar compartido como *"Cualquier persona con el enlace"*. La app intenta reproducirlo
+  en su propio reproductor; si Drive no entrega el archivo (suele pasar con archivos grandes o muy vistos), muestra el
+  visor de Drive recortado, sin el botón de "abrir en ventana nueva". El formulario te dice cuál de los dos se usará y
+  puede tomar la imagen de Drive como miniatura y portada.
 
 ## ⌨️ Atajos del reproductor
 

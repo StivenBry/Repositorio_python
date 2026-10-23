@@ -10,15 +10,15 @@ import { usePageTitle } from '../lib/usePageTitle'
 import type { Video } from '../types'
 
 /** Cada palabra debe aparecer en el título, la descripción, la categoría o las etiquetas. */
-function matches(video: Video, terms: string[]) {
+function matches(video: Video, terms: string[], playlistTitle = '') {
   if (!terms.length) return true
-  const haystack = normalize([video.title, video.description, video.category, ...video.tags].join(' '))
+  const haystack = normalize([video.title, video.description, video.category, playlistTitle, ...video.tags].join(' '))
   return terms.every((t) => haystack.includes(t))
 }
 
 export default function SearchPage() {
   usePageTitle('Buscar')
-  const { videos, categories, tags, loading } = useCatalog()
+  const { videos, categories, tags, loading, getPlaylist } = useCatalog()
   const [params, setParams] = useSearchParams()
   const [query, setQuery] = useState(params.get('q') ?? '')
   const category = params.get('categoria') ?? ''
@@ -47,8 +47,8 @@ export default function SearchPage() {
 
   const results = useMemo(() => {
     const terms = normalize(deferredQuery).split(/\s+/).filter(Boolean)
-    return videos.filter((v) => (!category || v.category === category) && matches(v, terms))
-  }, [videos, deferredQuery, category])
+    return videos.filter((v) => (!category || v.category === category) && matches(v, terms, getPlaylist(v.playlist_id)?.title))
+  }, [videos, deferredQuery, category, getPlaylist])
 
   const chip = (active: boolean) =>
     `shrink-0 rounded-full border px-4 py-1.5 text-sm font-medium transition ${

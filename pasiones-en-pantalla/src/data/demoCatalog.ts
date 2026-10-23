@@ -1,5 +1,5 @@
 import { asset } from '../lib/config'
-import type { Video } from '../types'
+import type { Playlist, Video } from '../types'
 
 /**
  * Catálogo de ejemplo. Todas las imágenes y clips en /public/demo son originales
@@ -164,6 +164,23 @@ const SEEDS: Seed[] = [
 
 const DAY = 86_400_000
 
+/** Lista de ejemplo para mostrar cómo se agrupan videos en el modo demo. */
+const DEMO_PLAYLIST_ID = 'demo-maraton-romance'
+const DEMO_PLAYLIST_ITEMS = ['corazon-de-fuego', 'destinos-cruzados', 'amor-en-tiempos-de-tormenta', 'el-ultimo-bolero']
+
+export function buildDemoPlaylists(now = Date.now()): Playlist[] {
+  const created = new Date(now - 2 * DAY).toISOString()
+  return [
+    {
+      id: DEMO_PLAYLIST_ID,
+      title: 'Maratón de romance',
+      description: 'Cuatro historias de amor para ver de corrido.',
+      created_at: created,
+      updated_at: created,
+    },
+  ]
+}
+
 export function buildDemoCatalog(now = Date.now()): Video[] {
   return SEEDS.map((s, i) => {
     const published = new Date(now - s.daysAgo * DAY - i * 3_600_000).toISOString()
@@ -185,6 +202,8 @@ export function buildDemoCatalog(now = Date.now()): Video[] {
       is_featured: Boolean(s.featured),
       is_top10: Boolean(s.top10),
       is_exclusive: Boolean(s.exclusive),
+      playlist_id: DEMO_PLAYLIST_ITEMS.includes(s.slug) ? DEMO_PLAYLIST_ID : null,
+      playlist_position: DEMO_PLAYLIST_ITEMS.includes(s.slug) ? DEMO_PLAYLIST_ITEMS.indexOf(s.slug) + 1 : null,
       published_at: published,
       created_at: published,
       updated_at: published,

@@ -48,16 +48,24 @@ interface LandscapeProps {
   inRow?: boolean
   subtitle?: string
   to?: string
+  /** Número de orden dentro de una lista. */
+  index?: number
+  /** Resalta el video que se está viendo. */
+  current?: boolean
 }
 
 /** Tarjeta 16:9 (Continuar viendo / Más como esto), similar a la fila de episodios. */
-export function LandscapeCard({ video, progress, inRow = false, subtitle, to }: LandscapeProps) {
+export function LandscapeCard({ video, progress, inRow = false, subtitle, to, index, current = false }: LandscapeProps) {
   return (
     <Link
       to={to ?? `/video/${video.id}`}
       className={`group/card block shrink-0 snap-start outline-none ${inRow ? 'w-[70vw] sm:w-[44vw] md:w-[31vw] lg:w-[23vw] xl:w-[19vw]' : 'w-full'}`}
     >
-      <div className="relative aspect-video overflow-hidden rounded-md bg-panel shadow-lg shadow-black/40 ring-white/80 transition duration-300 group-hover/card:ring-2 group-focus-visible/card:ring-2">
+      <div
+        className={`relative aspect-video overflow-hidden rounded-md bg-panel shadow-lg shadow-black/40 transition duration-300 group-hover/card:ring-2 group-focus-visible/card:ring-2 ${
+          current ? 'ring-2 ring-brand' : 'ring-white/80'
+        }`}
+      >
         <Artwork
           src={video.backdrop_url ?? video.thumbnail_url}
           title={video.title}
@@ -68,6 +76,12 @@ export function LandscapeCard({ video, progress, inRow = false, subtitle, to }: 
             <Play className="ml-0.5 size-6 fill-white" />
           </span>
         </div>
+        {index !== undefined && (
+          <span className="absolute top-2 left-2 rounded bg-black/75 px-2 py-0.5 text-xs font-bold tabular-nums">{index}</span>
+        )}
+        {current && (
+          <span className="absolute top-2 right-2 rounded bg-brand px-2 py-0.5 text-[0.7rem] font-bold">Viendo ahora</span>
+        )}
         {video.duration_seconds ? (
           <span className="absolute right-2 bottom-2 rounded bg-black/75 px-1.5 py-0.5 text-[0.7rem] font-semibold">
             {formatDuration(video.duration_seconds)}

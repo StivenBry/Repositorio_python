@@ -1,4 +1,4 @@
-import { ArrowLeft, Camera, CheckCircle2, Clock, Loader2, Save, TriangleAlert } from 'lucide-react'
+import { ArrowLeft, Camera, CheckCircle2, Clock, ImageDown, Loader2, Save, TriangleAlert } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { Artwork } from '../../components/Artwork'
@@ -7,7 +7,7 @@ import { FullPageSpinner } from '../../components/States'
 import { useCatalog } from '../../context/CatalogContext'
 import { useToast } from '../../context/ToastContext'
 import { formatClock, fromDatetimeLocal, toDatetimeLocal } from '../../lib/format'
-import { captureFrame, isValidVideoUrl, parseSource, probeDuration } from '../../lib/media'
+import { captureFrame, driveThumbnailUrl, isValidVideoUrl, parseSource, probeDuration } from '../../lib/media'
 import { usePageTitle } from '../../lib/usePageTitle'
 import { backend, isDemo } from '../../services'
 import type { UploadFolder, Video, VideoInput } from '../../types'
@@ -34,9 +34,15 @@ interface FormState {
   video: MediaState
   thumbnail: MediaState
   backdrop: MediaState
+  /** '' = sin lista · id de una lista · NEW_PLAYLIST = crear una nueva al guardar. */
+  playlist: string
+  newPlaylistTitle: string
+  playlistPosition: string
 }
 
-type Errors = Partial<Record<'title' | 'category' | 'video' | 'thumbnail' | 'backdrop' | 'duration', string>>
+const NEW_PLAYLIST = '__nueva__'
+
+type Errors = Partial<Record<'title' | 'category' | 'video' | 'thumbnail' | 'backdrop' | 'duration' | 'playlist', string>>
 
 interface Step {
   key: UploadFolder | 'save'
@@ -61,6 +67,9 @@ function initialState(video?: Video): FormState {
     video: video ? mediaFrom(video.video_url, video.video_path) : emptyMedia(),
     thumbnail: video ? mediaFrom(video.thumbnail_url, video.thumbnail_path) : emptyMedia(),
     backdrop: video ? mediaFrom(video.backdrop_url, video.backdrop_path) : emptyMedia(),
+    playlist: video?.playlist_id ?? '',
+    newPlaylistTitle: '',
+    playlistPosition: video?.playlist_position ? String(video.playlist_position) : '',
   }
 }
 
@@ -97,7 +106,7 @@ export default function AdminVideoFormPage() {
 function VideoForm({ original }: { original?: Video }) {
   const navigate = useNavigate()
   const toast = useToast()
-  const { allVideos, refresh } = useCatalog()
+  const { allVideos, playlists, playlistItems, refresh } = useCatalog()
   const [form, setForm] = useState<FormState>(() => initialState(original))
   const [errors, setErrors] = useState<Errors>({})
   const [saving, setSaving] = useState(false)
@@ -115,6 +124,20 @@ function VideoForm({ original }: { original?: Video }) {
   const categories = useMemo(() => [...new Set(allVideos.map((v) => v.category))].sort(), [allVideos])
   const knownTags = useMemo(() => [...new Set(allVideos.flatMap((v) => v.tags))].sort(), [allVideos])
 
+  /** Siguiente número libre de una lista (sin contar este mismo video). */
+  const nextPosition = (playlistId: string) =>
+    playlistItems(playlistId, true)
+      .filter((v) => v.id !== original?.id)
+      .reduce((max, v) => Math.max(max, v.playlist_position ?? 0), 0) + 1
+
+  const choosePlaylist = (value: string) => {
+    set('playlist', value)
+    if (!value) set('playlistPosition', '')
+    else if (value === NEW_PLAYLIST) set('playlistPosition', '1')
+    else if (value === original?.playlist_id && original.playlist_position) set('playlistPosition', String(original.playlist_position))
+    else set('playlistPosition', String(nextPosition(value)))
+  }
+
   // Aviso al cerrar la pestaña con cambios sin guardar.
   useEffect(() => {
     const onBeforeUnload = (e: BeforeUnloadEvent) => {
@@ -128,12 +151,12 @@ function VideoForm({ original }: { original?: Video }) {
   const videoPreview = useMediaPreview(form.video)
   useEffect(() => {
     if (!videoPreview || form.duration) return
-    const kind = parseSource(videoPreview).kind
-    if (kind !== 'file' && kind !== 'hls') return
+    const parsedSource = parseSource(videoPreview)
+    if (parsedSource.kind === 'youtube' || parsedSource.kind === 'vimeo') return
     if (form.video.mode === 'url' && !isValidVideoUrl(videoPreview)) return
     let cancelled = false
     const t = setTimeout(() => {
-      probeDuration(kind === 'file' ? parseSource(videoPreview).url : videoPreview).then((d) => {
+      probeDuration(parsedSource.kind === 'hls' ? videoPreview : parsedSource.url).then((d) => {
         if (!cancelled && d) setForm((f) => (f.duration ? f : { ...f, duration: formatClock(d) }))
       })
     }, 500)
@@ -142,6 +165,14 @@ function VideoForm({ original }: { original?: Video }) {
       clearTimeout(t)
     }
   }, [videoPreview, form.video.mode, form.duration])
+
+  const driveId = form.video.mode === 'url' ? parseSource(form.video.link).driveId : undefined
+  const applyDriveImages = () => {
+    if (!driveId) return
+    if (!hasMedia(form.thumbnail)) set('thumbnail', { ...emptyMedia(), mode: 'url', link: driveThumbnailUrl(driveId, 600) })
+    if (!hasMedia(form.backdrop)) set('backdrop', { ...emptyMedia(), mode: 'url', link: driveThumbnailUrl(driveId, 1600) })
+    toast.success('Se usará la imagen de Google Drive')
+  }
 
   const thumbPreview = useMediaPreview(form.thumbnail)
   const backdropPreview = useMediaPreview(form.backdrop)
@@ -170,6 +201,9 @@ function VideoForm({ original }: { original?: Video }) {
     if (form.thumbnail.mode === 'url' && form.thumbnail.link.trim() && !isValidVideoUrl(form.thumbnail.link)) e.thumbnail = 'Enlace de imagen no válido.'
     if (form.backdrop.mode === 'url' && form.backdrop.link.trim() && !isValidVideoUrl(form.backdrop.link)) e.backdrop = 'Enlace de imagen no válido.'
     if (parseDuration(form.duration) === 'invalid') e.duration = 'Usa minutos (90) o h:mm:ss (1:30:00).'
+    if (form.playlist === NEW_PLAYLIST && !form.newPlaylistTitle.trim()) e.playlist = 'Escribe el nombre de la nueva lista.'
+    else if (form.playlist && form.playlistPosition && !/^[1-9]\d{0,3}$/.test(form.playlistPosition.trim()))
+      e.playlist = 'El número en la lista debe ser un entero desde 1.'
     return e
   }
 
@@ -197,6 +231,19 @@ function VideoForm({ original }: { original?: Video }) {
 
     const update = (key: Step['key'], patch: Partial<Step>) => setSteps((s) => s.map((x) => (x.key === key ? { ...x, ...patch } : x)))
     const uploaded: string[] = []
+    let createdPlaylistId: string | null = null
+
+    /** Lista elegida; si es nueva (y no existe otra con el mismo nombre) se crea aquí. */
+    const resolvePlaylist = async (): Promise<string | null> => {
+      if (!form.playlist) return null
+      if (form.playlist !== NEW_PLAYLIST) return form.playlist
+      const title = form.newPlaylistTitle.trim()
+      const existing = playlists.find((p) => p.title.trim().toLowerCase() === title.toLowerCase())
+      if (existing) return existing.id
+      const created = await backend.createPlaylist({ title, description: '' })
+      createdPlaylistId = created.id
+      return created.id
+    }
 
     const resolve = async (folder: UploadFolder, m: MediaState) => {
       if (m.mode === 'url') return { url: m.link.trim() || null, path: null }
@@ -215,6 +262,10 @@ function VideoForm({ original }: { original?: Video }) {
       const b = await resolve('backdrops', form.backdrop)
       update('save', { progress: 50 })
 
+      const playlistId = await resolvePlaylist()
+      const playlistPosition = playlistId
+        ? Number(form.playlistPosition) || (createdPlaylistId ? 1 : nextPosition(playlistId))
+        : null
       const duration = parseDuration(form.duration)
       const input: VideoInput = {
         title: form.title.trim(),
@@ -233,6 +284,8 @@ function VideoForm({ original }: { original?: Video }) {
         is_featured: form.isFeatured,
         is_top10: form.isTop10,
         is_exclusive: form.isExclusive,
+        playlist_id: playlistId,
+        playlist_position: playlistPosition,
         published_at: fromDatetimeLocal(form.publishedAt),
       }
 
@@ -256,8 +309,9 @@ function VideoForm({ original }: { original?: Video }) {
       toast.success(original ? 'Cambios guardados' : `“${saved.title}” se publicó correctamente`)
       navigate('/admin')
     } catch (e) {
-      // Si algo falla, no deja archivos huérfanos en Storage.
+      // Si algo falla, no deja archivos huérfanos en Storage ni una lista vacía recién creada.
       if (uploaded.length) await backend.removeFiles(uploaded).catch(() => undefined)
+      if (createdPlaylistId) await backend.deletePlaylist(createdPlaylistId).catch(() => undefined)
       const message = e instanceof Error ? e.message : 'No se pudo guardar el video.'
       setFormError(message)
       toast.error(message)
@@ -296,6 +350,12 @@ function VideoForm({ original }: { original?: Video }) {
               sizeWarningBytes={isDemo ? undefined : FREE_TIER_LIMIT}
               hint="Recomendado: MP4 (H.264 + AAC). También: WebM, HLS (.m3u8), YouTube, Vimeo, Google Drive o Dropbox."
             />
+            {driveId && (!hasMedia(form.thumbnail) || !hasMedia(form.backdrop)) && (
+              <button type="button" className="btn-secondary mt-4 py-2 text-sm" onClick={applyDriveImages}>
+                <ImageDown className="size-4" />
+                Usar la imagen de Drive como miniatura y portada
+              </button>
+            )}
             {form.video.mode === 'upload' && form.video.file && (
               <div className="mt-4 flex flex-wrap gap-2">
                 <button type="button" className="btn-secondary py-2 text-sm" onClick={() => frameFromVideo('thumbnail')} disabled={Boolean(capturing)}>
@@ -393,6 +453,53 @@ function VideoForm({ original }: { original?: Video }) {
                   />
                 </div>
                 {errors.duration && <p className="mt-1.5 text-xs text-red-300">{errors.duration}</p>}
+              </div>
+              <div>
+                <label className="label" htmlFor="playlist">
+                  Lista de reproducción
+                </label>
+                <div className={`grid gap-3 ${form.playlist ? 'grid-cols-[minmax(0,1fr)_110px]' : ''}`}>
+                  <select id="playlist" value={form.playlist} onChange={(e) => choosePlaylist(e.target.value)} className="field">
+                    <option value="">Sin lista</option>
+                    {playlists.map((p) => (
+                      <option key={p.id} value={p.id}>
+                        {p.title} ({playlistItems(p.id, true).length})
+                      </option>
+                    ))}
+                    <option value={NEW_PLAYLIST}>+ Crear nueva lista…</option>
+                  </select>
+                  {form.playlist && (
+                    <input
+                      type="number"
+                      min={1}
+                      inputMode="numeric"
+                      value={form.playlistPosition}
+                      onChange={(e) => set('playlistPosition', e.target.value)}
+                      className="field"
+                      aria-label="Número en la lista"
+                      title="Número en la lista (orden)"
+                      placeholder="Nº"
+                    />
+                  )}
+                </div>
+                {form.playlist === NEW_PLAYLIST && (
+                  <input
+                    value={form.newPlaylistTitle}
+                    onChange={(e) => set('newPlaylistTitle', e.target.value)}
+                    maxLength={120}
+                    className={`field mt-3 ${errors.playlist ? 'border-red-400/60' : ''}`}
+                    placeholder="Nombre de la nueva lista, p. ej. Tierra de Pasión · Temporada 1"
+                    aria-label="Nombre de la nueva lista"
+                    autoFocus
+                  />
+                )}
+                {errors.playlist ? (
+                  <p className="mt-1.5 text-xs text-red-300">{errors.playlist}</p>
+                ) : (
+                  <p className="mt-1.5 text-xs text-muted">
+                    Agrupa capítulos de una novela, temporadas o colecciones. El número define el orden de reproducción.
+                  </p>
+                )}
               </div>
             </div>
           </Section>

@@ -8,7 +8,8 @@ const navLink = ({ isActive }: { isActive: boolean }) =>
   `transition-colors duration-200 hover:text-white ${isActive ? 'text-white font-medium' : 'text-white/70'}`
 
 export function Header() {
-  const { categories } = useCatalog()
+  const { categories, playlists, playlistItems } = useCatalog()
+  const visiblePlaylists = playlists.filter((p) => playlistItems(p.id).length > 0)
   const location = useLocation()
   const [scrolled, setScrolled] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
@@ -82,6 +83,17 @@ export function Header() {
                       <span className="text-xs text-muted">{c.count}</span>
                     </DropdownItem>
                   ))}
+                  {visiblePlaylists.length > 0 && (
+                    <>
+                      <p className="mx-4 mt-2 border-t border-line pt-3 pb-1 text-xs font-semibold tracking-widest text-muted uppercase">Listas</p>
+                      {visiblePlaylists.map((p) => (
+                        <DropdownItem key={p.id} to={`/lista/${p.id}`}>
+                          <span className="flex-1 truncate">{p.title}</span>
+                          <span className="text-xs text-muted">{playlistItems(p.id).length}</span>
+                        </DropdownItem>
+                      ))}
+                    </>
+                  )}
                 </div>
               </div>
             )}
@@ -127,6 +139,12 @@ export function Header() {
           {categories.map((c) => (
             <MobileLink key={c.slug} to={`/categoria/${c.slug}`}>
               {c.name} <span className="text-sm text-muted">({c.count})</span>
+            </MobileLink>
+          ))}
+          {visiblePlaylists.length > 0 && <p className="mt-4 mb-1 text-xs font-semibold tracking-widest text-muted uppercase">Listas</p>}
+          {visiblePlaylists.map((p) => (
+            <MobileLink key={p.id} to={`/lista/${p.id}`}>
+              {p.title} <span className="text-sm text-muted">({playlistItems(p.id).length})</span>
             </MobileLink>
           ))}
         </nav>

@@ -49,3 +49,15 @@ from (values
 ) as v (title, description, category, tags, video_url, thumbnail_url, backdrop_url,
         age_rating, ribbon, duration_seconds, is_featured, is_top10, is_exclusive, published_at)
 where not exists (select 1 from public.videos x where x.title = v.title);
+
+-- Lista de ejemplo: "Maratón de romance" con cuatro de los títulos anteriores.
+insert into public.playlists (title, description)
+select 'Maratón de romance', 'Cuatro historias de amor para ver de corrido.'
+where not exists (select 1 from public.playlists where title = 'Maratón de romance');
+
+update public.videos v
+set playlist_id = p.id, playlist_position = o.position
+from public.playlists p,
+     (values ('Corazón de Fuego', 1), ('Destinos Cruzados', 2), ('Amor en tiempos de Tormenta', 3), ('El último Bolero', 4))
+       as o (title, position)
+where p.title = 'Maratón de romance' and v.title = o.title and v.playlist_id is null;

@@ -2,9 +2,12 @@ export type SourceKind = 'file' | 'hls' | 'youtube' | 'vimeo' | 'drive'
 
 export interface ParsedSource {
   kind: SourceKind
-  /** URL que se asigna al <video> (file/hls) o al <iframe> (plataformas). */
+  /** URL que se asigna al <video> (file/hls/drive) o al <iframe> (YouTube/Vimeo). */
   url: string
   label: string
+  /** Solo Drive: visor de Google que se usa si la reproducción directa no es posible. */
+  fallbackUrl?: string
+  driveId?: string
 }
 
 const YOUTUBE = /(?:youtube(?:-nocookie)?\.com\/(?:watch\?(?:.*&)?v=|embed\/|shorts\/|live\/|v\/)|youtu\.be\/)([\w-]{11})/i
@@ -31,7 +34,15 @@ export function parseSource(raw: string): ParsedSource {
   }
 
   const drive = url.match(DRIVE)
-  if (drive) return { kind: 'drive', label: 'Google Drive', url: `https://drive.google.com/file/d/${drive[1]}/preview` }
+  if (drive) {
+    return {
+      kind: 'drive',
+      label: 'Google Drive',
+      url: driveStreamUrl(drive[1]),
+      fallbackUrl: `https://drive.google.com/file/d/${drive[1]}/preview`,
+      driveId: drive[1],
+    }
+  }
 
   if (HLS.test(url)) return { kind: 'hls', label: 'HLS (streaming)', url }
 
@@ -50,8 +61,18 @@ export function parseSource(raw: string): ParsedSource {
   return { kind: 'file', label: /\.webm(?:$|[?#])/i.test(url) ? 'WebM' : 'Archivo de video', url }
 }
 
-/** Plataformas externas usan su propio reproductor (no admiten controles personalizados). */
-export const isEmbed = (kind: SourceKind) => kind === 'youtube' || kind === 'vimeo' || kind === 'drive'
+/**
+ * Archivo de Drive servido directamente, para usar el reproductor propio sin la interfaz
+ * de Google. Drive no siempre lo permite (archivos muy grandes, límite de descargas):
+ * en ese caso el reproductor cambia solo al visor de Drive (fallbackUrl).
+ */
+export const driveStreamUrl = (id: string) => `https://drive.usercontent.google.com/download?id=${id}&export=download&confirm=t`
+
+/** Miniatura que genera Drive para archivos compartidos con "cualquier persona con el enlace". */
+export const driveThumbnailUrl = (id: string, width = 1280) => `https://drive.google.com/thumbnail?id=${id}&sz=w${width}`
+
+/** YouTube y Vimeo usan su propio reproductor (no admiten controles personalizados). */
+export const isEmbed = (kind: SourceKind) => kind === 'youtube' || kind === 'vimeo'
 
 export function isValidVideoUrl(value: string) {
   const v = value.trim()

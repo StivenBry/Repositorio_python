@@ -1,4 +1,4 @@
-import type { AdminSession, UploadFolder, UploadResult, Video, VideoInput } from '../types'
+import type { AdminSession, Playlist, PlaylistInput, UploadFolder, UploadResult, Video, VideoInput } from '../types'
 
 export type ProgressFn = (percent: number) => void
 
@@ -9,6 +9,13 @@ export interface Backend {
   createVideo(input: VideoInput): Promise<Video>
   updateVideo(id: string, input: VideoInput): Promise<Video>
   deleteVideo(video: Video): Promise<void>
+  /** Cambia solo la lista y la posición de un video (para reordenar). */
+  setVideoPlaylist(id: string, playlistId: string | null, position: number | null): Promise<void>
+  listPlaylists(): Promise<Playlist[]>
+  createPlaylist(input: PlaylistInput): Promise<Playlist>
+  updatePlaylist(id: string, input: PlaylistInput): Promise<Playlist>
+  /** Borra la lista; sus videos se conservan, sin lista. */
+  deletePlaylist(id: string): Promise<void>
   uploadFile(file: File, folder: UploadFolder, onProgress?: ProgressFn): Promise<UploadResult>
   removeFiles(paths: string[]): Promise<void>
 

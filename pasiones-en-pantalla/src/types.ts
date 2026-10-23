@@ -21,12 +21,26 @@ export interface Video {
   is_featured: boolean
   is_top10: boolean
   is_exclusive: boolean
+  /** Lista de reproducción a la que pertenece (capítulos de una novela, una colección…). */
+  playlist_id: string | null
+  /** Orden dentro de la lista, empezando en 1. */
+  playlist_position: number | null
   published_at: string
   created_at: string
   updated_at: string
 }
 
 export type VideoInput = Omit<Video, 'id' | 'created_at' | 'updated_at'>
+
+export interface Playlist {
+  id: string
+  title: string
+  description: string
+  created_at: string
+  updated_at: string
+}
+
+export type PlaylistInput = Pick<Playlist, 'title' | 'description'>
 
 export type UploadFolder = 'videos' | 'thumbnails' | 'backdrops'
 
