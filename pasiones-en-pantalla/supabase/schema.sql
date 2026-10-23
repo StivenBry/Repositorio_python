@@ -18,14 +18,17 @@ create policy "admins: cada usuario ve su propia fila" on public.admins
   for select to authenticated
   using (user_id = (select auth.uid()));
 
-grant select on public.admins to authenticated;
+-- anon necesita el permiso para que is_admin() (SECURITY INVOKER) funcione;
+-- la política anterior hace que nunca vea filas.
+grant select on public.admins to anon, authenticated;
 
--- Devuelve true si quien hace la petición es administrador.
+-- Devuelve true si quien hace la petición es administrador. Se ejecuta con los
+-- permisos de quien llama (SECURITY INVOKER): solo puede ver su propia fila.
 create or replace function public.is_admin()
 returns boolean
 language sql
 stable
-security definer
+security invoker
 set search_path = ''
 as $$
   select exists (select 1 from public.admins where user_id = auth.uid());
