@@ -25,6 +25,19 @@ interface CatalogState {
 
 const CatalogContext = createContext<CatalogState | null>(null)
 
+const BASE = import.meta.env.BASE_URL
+
+/** "/demo/x.webp" → "/Repositorio_python/pasiones/demo/x.webp" cuando el sitio vive en una subcarpeta. */
+const withBase = <T extends string | null>(url: T): T =>
+  (url && BASE !== '/' && url.startsWith('/') && !url.startsWith('//') && !url.startsWith(BASE) ? BASE + url.slice(1) : url) as T
+
+const normalizeUrls = (v: Video): Video => ({
+  ...v,
+  video_url: withBase(v.video_url),
+  thumbnail_url: withBase(v.thumbnail_url),
+  backdrop_url: withBase(v.backdrop_url),
+})
+
 export function CatalogProvider({ children }: { children: ReactNode }) {
   const { session } = useAuth()
   const [allVideos, setAllVideos] = useState<Video[]>([])
@@ -34,7 +47,7 @@ export function CatalogProvider({ children }: { children: ReactNode }) {
   const refresh = useCallback(async () => {
     try {
       setError(null)
-      setAllVideos(await backend.listVideos())
+      setAllVideos((await backend.listVideos()).map(normalizeUrls))
     } catch (e) {
       setError(e instanceof Error ? e.message : 'No se pudo cargar el catálogo.')
     } finally {

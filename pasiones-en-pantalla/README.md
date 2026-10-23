@@ -5,6 +5,8 @@ React + Vite + Tailwind CSS en el frontend; **Supabase** para autenticación, ba
 
 ![Pasiones en Pantalla](public/og-image.jpg)
 
+**🌐 Sitio publicado:** https://stivenbry.github.io/Repositorio_python/pasiones/ · Panel: [`/admin`](https://stivenbry.github.io/Repositorio_python/pasiones/admin)
+
 > **Funciona desde el primer minuto:** si todavía no configuras Supabase, la app arranca en **modo demo**
 > con 12 títulos de ejemplo y un panel de administración que guarda los cambios en tu navegador.
 > Cuando agregues las variables de entorno, pasa automáticamente a usar Supabase.
@@ -82,7 +84,17 @@ O con un clic:
 
 [![Deploy to Netlify](https://www.netlify.com/img/deploy/button.svg)](https://app.netlify.com/start/deploy?repository=https://github.com/StivenBry/Repositorio_python)
 
-#### Opción C — Cualquier hosting estático
+#### Opción C — GitHub Pages (ya configurado en este repositorio)
+
+El sitio se publica solo en **https://stivenbry.github.io/Repositorio_python/pasiones/**:
+cada cambio en `pasiones-en-pantalla/` que llega a `main` ejecuta el workflow
+[`.github/workflows/pasiones-pages.yml`](../.github/workflows/pasiones-pages.yml), que compila con
+`npm run build:pages` y guarda el resultado en la carpeta `pasiones/` de la raíz (la que sirve Pages).
+El archivo `404.html` de la raíz permite abrir directamente enlaces como `/pasiones/video/...`.
+
+Las credenciales públicas de Supabase para este build se leen de `pasiones-en-pantalla/.env.production`.
+
+#### Opción D — Cualquier hosting estático
 
 ```bash
 npm install
@@ -116,6 +128,7 @@ npm run dev                  # http://localhost:5173
 | --- | --- |
 | `npm run dev` | Servidor de desarrollo con recarga instantánea |
 | `npm run build` | Verifica tipos (TypeScript) y genera `dist/` para producción |
+| `npm run build:pages` | Igual, pero para GitHub Pages (subcarpeta `/Repositorio_python/pasiones/`, salida en `../pasiones`) |
 | `npm run preview` | Sirve `dist/` localmente para probar el build |
 | `npm run typecheck` | Solo verificación de tipos |
 

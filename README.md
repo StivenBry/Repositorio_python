@@ -2,7 +2,8 @@
 
 | Carpeta / archivo | Descripción |
 | --- | --- |
-| [`pasiones-en-pantalla/`](pasiones-en-pantalla/) | **Pasiones en Pantalla**: plataforma de streaming (React + Supabase) con panel de administración. Instrucciones de configuración y despliegue en su [README](pasiones-en-pantalla/README.md). |
+| [`pasiones-en-pantalla/`](pasiones-en-pantalla/) | **Pasiones en Pantalla**: plataforma de streaming (React + Supabase) con panel de administración. **En línea:** https://stivenbry.github.io/Repositorio_python/pasiones/ · Configuración y despliegue en su [README](pasiones-en-pantalla/README.md). |
+| `pasiones/` | Sitio compilado de Pasiones en Pantalla que publica GitHub Pages (se genera automáticamente; no editar a mano). |
 | `terapias.html` | Gestión de terapias sincronizada con Google Sheets. |
 | `suma.py` | Ejemplo de suma en Python. |
 
