@@ -157,6 +157,10 @@ export const demoBackend: Backend = {
     authListeners.forEach((l) => l(null))
   },
 
+  async changePassword() {
+    throw new Error('En modo demo la contraseña es fija. Conecta Supabase para usar tu propia cuenta.')
+  },
+
   onAuthChange(callback) {
     authListeners.add(callback)
     return () => {

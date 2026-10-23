@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Proyectos · StivenBry</title>
+    <meta name="description" content="Pasiones en Pantalla y Gestión de Terapias." />
+    <link rel="icon" type="image/svg+xml" href="pasiones/favicon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet" />
+    <style>
+      :root { color-scheme: dark; }
+      * { box-sizing: border-box; }
+      body { margin: 0; min-height: 100vh; background: radial-gradient(ellipse at top, #1a1f3d, #0b0e1c 60%); color: #fff; font-family: Inter, system-ui, sans-serif; display: flex; align-items: center; justify-content: center; padding: 32px 16px; }
+      main { width: 100%; max-width: 920px; }
+      h1 { font-size: clamp(1.8rem, 4vw, 2.6rem); font-weight: 800; letter-spacing: -0.02em; margin: 0 0 8px; }
+      p.lead { color: #a6abc2; margin: 0 0 32px; }
+      .grid { display: grid; gap: 20px; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
+      a.card { display: block; text-decoration: none; color: inherit; border-radius: 18px; overflow: hidden; background: rgba(23, 28, 51, 0.8); border: 1px solid rgba(255, 255, 255, 0.09); transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease; }
+      a.card:hover, a.card:focus-visible { transform: translateY(-4px); box-shadow: 0 20px 40px rgba(0, 0, 0, 0.45); border-color: rgba(242, 106, 33, 0.6); outline: none; }
+      .thumb { aspect-ratio: 1200 / 630; background: #10142a center / cover no-repeat; }
+      .thumb.terapias { display: grid; place-items: center; background: linear-gradient(135deg, #1d4ed8, #0f172a); font-size: 64px; }
+      .body { padding: 18px 20px 22px; }
+      .body h2 { margin: 0 0 6px; font-size: 1.2rem; }
+      .body p { margin: 0; color: #a6abc2; font-size: 0.95rem; line-height: 1.5; }
+      .cta { display: inline-block; margin-top: 14px; color: #f26a21; font-weight: 600; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Proyectos</h1>
+      <p class="lead">Aplicaciones publicadas desde el repositorio Repositorio_python.</p>
+      <div class="grid">
+        <a class="card" href="pasiones/">
+          <div class="thumb" style="background-image: url('pasiones/og-image.jpg')" role="img" aria-label="Pasiones en Pantalla"></div>
+          <div class="body">
+            <h2>Pasiones en Pantalla</h2>
+            <p>Novelas, series y películas en streaming, con panel de administración.</p>
+            <span class="cta">Abrir →</span>
+          </div>
+        </a>
+        <a class="card" href="terapias.html">
+          <div class="thumb terapias" aria-hidden="true">🗓️</div>
+          <div class="body">
+            <h2>Gestión de Terapias</h2>
+            <p>Seguimiento de terapias sincronizado con Google Sheets.</p>
+            <span class="cta">Abrir →</span>
+          </div>
+        </a>
+      </div>
+    </main>
+  </body>
+</html>

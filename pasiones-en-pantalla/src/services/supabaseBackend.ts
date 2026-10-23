@@ -147,6 +147,15 @@ export function createSupabaseBackend(client: SupabaseClient): Backend {
       await client.auth.signOut()
     },
 
+    async changePassword(newPassword) {
+      const { error } = await client.auth.updateUser({ password: newPassword })
+      if (!error) return
+      const lower = error.message.toLowerCase()
+      if (lower.includes('different from the old')) throw new Error('La nueva contraseña debe ser distinta de la actual.')
+      if (lower.includes('at least') || lower.includes('weak')) throw new Error('La contraseña es demasiado débil: usa al menos 8 caracteres combinando letras y números.')
+      throw friendlyError(error)
+    },
+
     onAuthChange(callback) {
       const { data } = client.auth.onAuthStateChange((event, session) => {
         if (event === 'INITIAL_SESSION') return

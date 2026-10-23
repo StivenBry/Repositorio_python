@@ -12,7 +12,7 @@
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
-    "build:pages": "tsc --noEmit && vite build --base=/Repositorio_python/pasiones/ --outDir ../pasiones --emptyOutDir"
+    "build:pages": "tsc --noEmit && vite build --base=/Repositorio_python/pasiones/ --outDir ../docs/pasiones --emptyOutDir"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.118.0",
