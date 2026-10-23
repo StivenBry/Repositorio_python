@@ -86,11 +86,11 @@ O con un clic:
 
 #### Opción C — GitHub Pages (ya configurado en este repositorio)
 
-El sitio se publica solo en **https://stivenbry.github.io/Repositorio_python/pasiones/**:
-cada cambio en `pasiones-en-pantalla/` que llega a `main` ejecuta el workflow
-[`.github/workflows/pasiones-pages.yml`](../.github/workflows/pasiones-pages.yml), que compila con
-`npm run build:pages` y guarda el resultado en la carpeta `pasiones/` de la raíz (la que sirve Pages).
-El archivo `404.html` de la raíz permite abrir directamente enlaces como `/pasiones/video/...`.
+El sitio se publica solo en **https://stivenbry.github.io/Repositorio_python/pasiones/**.
+GitHub Pages está configurado para servir la carpeta `docs/` de `main`. Cada cambio en `pasiones-en-pantalla/`
+que llega a `main` ejecuta el workflow [`.github/workflows/pasiones-pages.yml`](../.github/workflows/pasiones-pages.yml),
+que compila con `npm run build:pages` y guarda el resultado en `docs/pasiones/` (también copia `terapias.html` a `docs/`).
+`docs/404.html` permite abrir directamente enlaces como `/pasiones/video/...`.
 
 Las credenciales públicas de Supabase para este build se leen de `pasiones-en-pantalla/.env.production`.
 
@@ -128,7 +128,7 @@ npm run dev                  # http://localhost:5173
 | --- | --- |
 | `npm run dev` | Servidor de desarrollo con recarga instantánea |
 | `npm run build` | Verifica tipos (TypeScript) y genera `dist/` para producción |
-| `npm run build:pages` | Igual, pero para GitHub Pages (subcarpeta `/Repositorio_python/pasiones/`, salida en `../pasiones`) |
+| `npm run build:pages` | Igual, pero para GitHub Pages (subcarpeta `/Repositorio_python/pasiones/`, salida en `../docs/pasiones`) |
 | `npm run preview` | Sirve `dist/` localmente para probar el build |
 | `npm run typecheck` | Solo verificación de tipos |
 

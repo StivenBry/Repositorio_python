@@ -1,12 +1,14 @@
-# Recompila "Pasiones en Pantalla" y la publica en GitHub Pages (carpeta /pasiones de main)
-# cada vez que cambia el código de pasiones-en-pantalla/.
-name: Publicar Pasiones en Pantalla
+# GitHub Pages publica la carpeta /docs de main. Este workflow recompila
+# "Pasiones en Pantalla" en docs/pasiones y copia terapias.html a docs/
+# cada vez que cambia alguno de ellos.
+name: Publicar sitio (GitHub Pages)
 
 on:
   push:
     branches: [main]
     paths:
       - 'pasiones-en-pantalla/**'
+      - 'terapias.html'
       - '.github/workflows/pasiones-pages.yml'
   workflow_dispatch:
 
@@ -20,9 +22,6 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: pasiones-en-pantalla
     steps:
       - uses: actions/checkout@v4
 
@@ -32,18 +31,23 @@ jobs:
           cache: npm
           cache-dependency-path: pasiones-en-pantalla/package-lock.json
 
-      - run: npm ci
-      - run: npm run build:pages
-
-      - name: Guardar el sitio compilado en /pasiones
-        working-directory: .
+      - name: Compilar Pasiones en Pantalla
+        working-directory: pasiones-en-pantalla
         run: |
-          if [ -z "$(git status --porcelain pasiones)" ]; then
+          npm ci
+          npm run build:pages
+
+      - name: Copiar terapias.html
+        run: cp terapias.html docs/terapias.html
+
+      - name: Guardar el sitio en /docs
+        run: |
+          if [ -z "$(git status --porcelain docs)" ]; then
             echo "El sitio publicado ya está al día."
             exit 0
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898099+github-actions[bot]@users.noreply.github.com"
-          git add pasiones
-          git commit -m "Publicar Pasiones en Pantalla en GitHub Pages"
+          git add docs
+          git commit -m "Actualizar sitio publicado en /docs"
           git push

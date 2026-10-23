@@ -1,10 +1,12 @@
-import { Database, ExternalLink, FlaskConical, LayoutDashboard, LogOut, Plus } from 'lucide-react'
+import { Database, ExternalLink, FlaskConical, KeyRound, LayoutDashboard, LogOut, Plus } from 'lucide-react'
+import { useState } from 'react'
 import { Navigate, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { Logo } from '../../components/Logo'
 import { FullPageSpinner } from '../../components/States'
 import { useAuth } from '../../context/AuthContext'
 import { useToast } from '../../context/ToastContext'
 import { isDemo } from '../../services'
+import { ChangePasswordDialog } from './components/ChangePasswordDialog'
 
 const tab = ({ isActive }: { isActive: boolean }) =>
   `inline-flex items-center gap-2 rounded-lg px-3.5 py-2 text-sm font-semibold transition ${
@@ -17,6 +19,7 @@ export default function AdminLayout() {
   const location = useLocation()
   const navigate = useNavigate()
   const toast = useToast()
+  const [changingPassword, setChangingPassword] = useState(false)
 
   if (loading) return <FullPageSpinner />
   if (!session) return <Navigate to="/admin/login" replace state={{ from: location.pathname }} />
@@ -54,6 +57,12 @@ export default function AdminLayout() {
               {isDemo ? 'Modo demo' : 'Supabase conectado'}
             </span>
             <span className="hidden max-w-48 truncate text-sm text-muted md:inline">{session.email}</span>
+            {!isDemo && (
+              <button type="button" onClick={() => setChangingPassword(true)} className="btn-ghost px-3 py-2 text-sm" title="Cambiar contraseña">
+                <KeyRound className="size-4" />
+                <span className="hidden lg:inline">Contraseña</span>
+              </button>
+            )}
             <a href={import.meta.env.BASE_URL} target="_blank" rel="noreferrer" className="btn-ghost px-3 py-2 text-sm" title="Ver sitio público">
               <ExternalLink className="size-4" />
               <span className="hidden sm:inline">Ver sitio</span>
@@ -81,6 +90,7 @@ export default function AdminLayout() {
       <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:py-10">
         <Outlet />
       </main>
+      {changingPassword && <ChangePasswordDialog onClose={() => setChangingPassword(false)} />}
     </div>
   )
 }

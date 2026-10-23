@@ -16,6 +16,7 @@ export interface Backend {
   /** Inicia sesión y verifica que la cuenta sea administradora. */
   signIn(email: string, password: string): Promise<AdminSession>
   signOut(): Promise<void>
+  changePassword(newPassword: string): Promise<void>
   onAuthChange(callback: (session: AdminSession | null) => void): () => void
 }
 
