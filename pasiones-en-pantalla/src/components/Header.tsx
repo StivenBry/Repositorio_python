@@ -1,4 +1,4 @@
-import { ChevronDown, Menu, Search, User, X } from 'lucide-react'
+import { ChevronDown, Menu, Search, X } from 'lucide-react'
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { Link, NavLink, useLocation } from 'react-router-dom'
 import { useCatalog } from '../context/CatalogContext'
@@ -114,9 +114,6 @@ export function Header() {
           </Link>
           <Link to="/buscar" className="icon-btn size-10 bg-white/15 lg:size-12" aria-label="Buscar">
             <Search className="size-5 lg:size-6" />
-          </Link>
-          <Link to="/admin" className="icon-btn size-10 bg-white/15 lg:size-12" aria-label="Panel de administración">
-            <User className="size-5 fill-white lg:size-6" />
           </Link>
           <button
             type="button"

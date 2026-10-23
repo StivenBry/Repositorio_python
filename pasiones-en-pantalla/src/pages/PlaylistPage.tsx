@@ -32,17 +32,24 @@ export default function PlaylistPage() {
   const total = items.reduce((sum, v) => sum + (v.duration_seconds ?? 0), 0)
   // "Continuar" lleva al primer video con progreso guardado; si no hay, al primero de la lista.
   const resume = items.find((v) => progress[v.id]) ?? items[0]
-  const cover = items[0]
+  const cover = playlist.cover_url ?? items[0].backdrop_url ?? items[0].thumbnail_url
+  const ownCover = Boolean(playlist.cover_url)
 
   return (
     <div>
-      <section className="relative isolate overflow-hidden">
+      <section className={`relative isolate overflow-hidden ${ownCover ? 'flex min-h-[62svh] items-end lg:min-h-[70vh]' : ''}`}>
         <div className="absolute inset-0 -z-10">
-          <Artwork src={cover.backdrop_url ?? cover.thumbnail_url} title={cover.title} showFallbackTitle={false} eager className="size-full scale-105 blur-sm" />
-          <div className="absolute inset-0 bg-gradient-to-r from-ink via-ink/85 to-ink/40" />
+          <Artwork
+            src={cover}
+            title={playlist.title}
+            showFallbackTitle={false}
+            eager
+            className={`size-full ${ownCover ? 'animate-ken-burns object-[70%_center]' : 'scale-105 blur-sm'}`}
+          />
+          <div className={`absolute inset-0 bg-gradient-to-r from-ink ${ownCover ? 'via-ink/70 to-ink/10' : 'via-ink/85 to-ink/40'}`} />
           <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-ink to-transparent" />
         </div>
-        <div className="gutter animate-rise-in pt-28 pb-12 lg:pt-36 lg:pb-16">
+        <div className="gutter animate-rise-in w-full pt-28 pb-12 lg:pt-36 lg:pb-16">
           <p className="flex items-center gap-2 text-sm font-semibold tracking-widest text-brand uppercase">
             <ListVideo className="size-4" /> Lista de reproducción
           </p>

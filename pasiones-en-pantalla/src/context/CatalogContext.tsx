@@ -45,6 +45,13 @@ const normalizeVideo = (v: Video): Video => ({
   playlist_position: v.playlist_position ?? null,
 })
 
+const normalizePlaylist = (p: Playlist): Playlist => ({
+  ...p,
+  description: p.description ?? '',
+  cover_url: withBase(p.cover_url ?? null),
+  cover_path: p.cover_path ?? null,
+})
+
 const byPosition = (a: Video, b: Video) =>
   (a.playlist_position ?? Number.MAX_SAFE_INTEGER) - (b.playlist_position ?? Number.MAX_SAFE_INTEGER) ||
   a.published_at.localeCompare(b.published_at)
@@ -68,7 +75,7 @@ export function CatalogProvider({ children }: { children: ReactNode }) {
         }),
       ])
       setAllVideos(videos.map(normalizeVideo))
-      setPlaylists(lists)
+      setPlaylists(lists.map(normalizePlaylist))
     } catch (e) {
       setError(e instanceof Error ? e.message : 'No se pudo cargar el catálogo.')
     } finally {

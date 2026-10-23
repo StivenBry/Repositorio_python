@@ -175,6 +175,8 @@ export function buildDemoPlaylists(now = Date.now()): Playlist[] {
       id: DEMO_PLAYLIST_ID,
       title: 'Maratón de romance',
       description: 'Cuatro historias de amor para ver de corrido.',
+      cover_url: asset('demo/backdrops/corazon-de-fuego.webp'),
+      cover_path: null,
       created_at: created,
       updated_at: created,
     },

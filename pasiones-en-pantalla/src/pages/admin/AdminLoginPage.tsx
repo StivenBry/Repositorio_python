@@ -7,10 +7,12 @@ import { useAuth } from '../../context/AuthContext'
 import { useCatalog } from '../../context/CatalogContext'
 import { isDemo } from '../../services'
 import { DEMO_CREDENTIALS } from '../../services/demoBackend'
+import { useNoIndex } from '../../lib/useNoIndex'
 import { usePageTitle } from '../../lib/usePageTitle'
 
 export default function AdminLoginPage() {
   usePageTitle('Acceso administrador')
+  useNoIndex()
   const { session, loading, signIn } = useAuth()
   const { videos } = useCatalog()
   const navigate = useNavigate()
