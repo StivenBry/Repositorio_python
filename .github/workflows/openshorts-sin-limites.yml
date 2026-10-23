@@ -1,0 +1,52 @@
+# Pruebas de OpenShorts Sin Límites: las del backend (sin la pila pesada de
+# IA) y la compilación del panel. Solo se ejecuta cuando cambia esa carpeta.
+name: OpenShorts Sin Límites (CI)
+
+on:
+  push:
+    paths:
+      - 'openshorts-sin-limites/**'
+      - '.github/workflows/openshorts-sin-limites.yml'
+  pull_request:
+    paths:
+      - 'openshorts-sin-limites/**'
+      - '.github/workflows/openshorts-sin-limites.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  backend-tests:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: openshorts-sin-limites
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      # Lo que importan las pruebas, sin torch/ultralytics/mediapipe/whisper:
+      # el pipeline los carga de forma perezosa y las pruebas no los usan.
+      - name: Instalar dependencias de prueba
+        run: >
+          pip install pytest pillow httpx pydantic numpy opencv-python-headless
+          python-dotenv google-genai fastapi boto3 python-multipart
+      - name: Pruebas
+        run: pytest tests/ -v
+
+  dashboard-build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: openshorts-sin-limites/dashboard
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: openshorts-sin-limites/dashboard/package-lock.json
+      - run: npm ci
+      - run: npm run build
