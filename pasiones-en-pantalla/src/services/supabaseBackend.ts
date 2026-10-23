@@ -1,6 +1,6 @@
 import type { Session, SupabaseClient } from '@supabase/supabase-js'
 import { SUPABASE_ANON_KEY, SUPABASE_BUCKET, SUPABASE_URL } from '../lib/config'
-import type { AdminSession, Video } from '../types'
+import type { AdminSession, Playlist, Video } from '../types'
 import { buildStoragePath, storagePathsOf, type Backend } from './backend'
 
 /** Traduce los errores más comunes de Supabase a mensajes accionables. */
@@ -18,6 +18,8 @@ export function friendlyError(error: unknown): Error {
     return new Error('Tipo de archivo no permitido por el bucket. Usa MP4/WebM para video y JPG/PNG/WebP para imágenes.')
   if (lower.includes('failed to fetch') || lower.includes('networkerror'))
     return new Error('No se pudo conectar con Supabase. Revisa tu conexión y las variables VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY.')
+  if (lower.includes('playlist') && (lower.includes('does not exist') || lower.includes('could not find')))
+    return new Error('Faltan las listas de reproducción en la base de datos. Ejecuta de nuevo supabase/schema.sql.')
   if (lower.includes('relation') && lower.includes('does not exist'))
     return new Error('La tabla "videos" no existe. Ejecuta supabase/schema.sql en el SQL Editor de Supabase.')
   return new Error(message)
@@ -106,6 +108,34 @@ export function createSupabaseBackend(client: SupabaseClient): Backend {
       const { error } = await client.from('videos').delete().eq('id', video.id)
       if (error) throw friendlyError(error)
       await removeFiles(storagePathsOf(video))
+    },
+
+    async setVideoPlaylist(id, playlistId, position) {
+      const { error } = await client.from('videos').update({ playlist_id: playlistId, playlist_position: position }).eq('id', id)
+      if (error) throw friendlyError(error)
+    },
+
+    async listPlaylists() {
+      const { data, error } = await client.from('playlists').select('*').order('created_at', { ascending: true })
+      if (error) throw friendlyError(error)
+      return (data ?? []) as Playlist[]
+    },
+
+    async createPlaylist(input) {
+      const { data, error } = await client.from('playlists').insert(input).select().single()
+      if (error) throw friendlyError(error)
+      return data as Playlist
+    },
+
+    async updatePlaylist(id, input) {
+      const { data, error } = await client.from('playlists').update(input).eq('id', id).select().single()
+      if (error) throw friendlyError(error)
+      return data as Playlist
+    },
+
+    async deletePlaylist(id) {
+      const { error } = await client.from('playlists').delete().eq('id', id)
+      if (error) throw friendlyError(error)
     },
 
     async uploadFile(file, folder, onProgress) {

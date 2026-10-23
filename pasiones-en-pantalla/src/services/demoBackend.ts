@@ -1,5 +1,5 @@
-import { buildDemoCatalog } from '../data/demoCatalog'
-import type { AdminSession, Video, VideoInput } from '../types'
+import { buildDemoCatalog, buildDemoPlaylists } from '../data/demoCatalog'
+import type { AdminSession, Playlist, Video, VideoInput } from '../types'
 import { buildStoragePath, storagePathsOf, uid, type Backend } from './backend'
 import { idbDelete, idbGet, idbPut } from './idb'
 
@@ -10,6 +10,7 @@ import { idbDelete, idbGet, idbPut } from './idb'
 export const DEMO_CREDENTIALS = { email: 'admin@pasiones.demo', password: 'demo1234' }
 
 const VIDEOS_KEY = 'pep:demo:videos:v1'
+const PLAYLISTS_KEY = 'pep:demo:playlists:v1'
 const SESSION_KEY = 'pep:demo:session'
 const IDB_PREFIX = 'idb://'
 
@@ -17,6 +18,26 @@ const objectUrls = new Map<string, string>()
 const authListeners = new Set<(s: AdminSession | null) => void>()
 
 const delay = (ms: number) => new Promise((r) => setTimeout(r, ms))
+
+function readPlaylists(): Playlist[] {
+  try {
+    const raw = localStorage.getItem(PLAYLISTS_KEY)
+    if (raw) return JSON.parse(raw) as Playlist[]
+  } catch {
+    /* datos corruptos: se regeneran */
+  }
+  const seeded = buildDemoPlaylists()
+  writePlaylists(seeded)
+  return seeded
+}
+
+function writePlaylists(playlists: Playlist[]) {
+  try {
+    localStorage.setItem(PLAYLISTS_KEY, JSON.stringify(playlists))
+  } catch {
+    throw new Error('El navegador no permite guardar datos (¿modo privado o almacenamiento lleno?).')
+  }
+}
 
 function readStored(): Video[] {
   try {
@@ -57,7 +78,15 @@ async function hydrate(video: Video): Promise<Video> {
     resolveUrl(video.thumbnail_url),
     resolveUrl(video.backdrop_url),
   ])
-  return { ...video, video_url: video_url ?? '', thumbnail_url, backdrop_url }
+  // Videos guardados antes de existir las listas no traen estos campos.
+  return {
+    ...video,
+    video_url: video_url ?? '',
+    thumbnail_url,
+    backdrop_url,
+    playlist_id: video.playlist_id ?? null,
+    playlist_position: video.playlist_position ?? null,
+  }
 }
 
 /** Al guardar, las URLs blob: se vuelven a escribir como idb:// usando su ruta. */
@@ -121,6 +150,40 @@ export const demoBackend: Backend = {
     await removeFiles(storagePathsOf(video))
   },
 
+  async setVideoPlaylist(id, playlistId, position) {
+    const all = readStored()
+    const video = all.find((v) => v.id === id)
+    if (!video) throw new Error('El video ya no existe.')
+    video.playlist_id = playlistId
+    video.playlist_position = position
+    writeStored(all)
+  },
+
+  async listPlaylists() {
+    return readPlaylists().sort((a, b) => a.created_at.localeCompare(b.created_at))
+  },
+
+  async createPlaylist(input) {
+    const now = new Date().toISOString()
+    const playlist: Playlist = { ...input, id: uid(), created_at: now, updated_at: now }
+    writePlaylists([...readPlaylists(), playlist])
+    return playlist
+  },
+
+  async updatePlaylist(id, input) {
+    const all = readPlaylists()
+    const index = all.findIndex((p) => p.id === id)
+    if (index === -1) throw new Error('La lista ya no existe.')
+    all[index] = { ...all[index], ...input, updated_at: new Date().toISOString() }
+    writePlaylists(all)
+    return all[index]
+  },
+
+  async deletePlaylist(id) {
+    writePlaylists(readPlaylists().filter((p) => p.id !== id))
+    writeStored(readStored().map((v) => (v.playlist_id === id ? { ...v, playlist_id: null, playlist_position: null } : v)))
+  },
+
   async uploadFile(file, folder, onProgress) {
     const path = buildStoragePath(folder, file)
     // Progreso simulado para que la experiencia sea igual a la de Supabase.
@@ -174,4 +237,5 @@ export async function resetDemoData() {
   const stored = readStored()
   await Promise.all(stored.flatMap((v) => storagePathsOf(v)).map((p) => idbDelete(p).catch(() => undefined)))
   localStorage.removeItem(VIDEOS_KEY)
+  localStorage.removeItem(PLAYLISTS_KEY)
 }

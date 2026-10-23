@@ -17,6 +17,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type PointerEvent as
 import { formatClock } from '../lib/format'
 import { readVolume, writeVolume } from '../lib/localStore'
 import { isEmbed, parseSource, type ParsedSource } from '../lib/media'
+import { DriveEmbed } from './DriveEmbed'
 
 interface PlayerProps {
   src: string
@@ -33,23 +34,53 @@ interface PlayerProps {
 
 export default function VideoPlayer(props: PlayerProps) {
   const source = useMemo(() => parseSource(props.src), [props.src])
-  if (isEmbed(source.kind)) return <EmbedPlayer source={source} title={props.title} onBack={props.onBack} />
-  return <NativePlayer {...props} source={source} />
+  // Drive: primero el reproductor propio; si Drive no entrega el archivo, su visor recortado.
+  const [driveFallback, setDriveFallback] = useState(false)
+  const switchToDriveViewer = useCallback(() => setDriveFallback(true), [])
+  if (isEmbed(source.kind)) return <EmbedPlayer url={source.url} title={props.title} onBack={props.onBack} />
+  if (source.kind === 'drive' && driveFallback && source.fallbackUrl) {
+    return <EmbedPlayer url={source.fallbackUrl} title={props.title} onBack={props.onBack} drive />
+  }
+  return (
+    <NativePlayer
+      {...props}
+      source={source}
+      onUnplayable={source.kind === 'drive' ? switchToDriveViewer : undefined}
+    />
+  )
 }
 
 // ------------------------------------------------------------------ Embeds
 
-function EmbedPlayer({ source, title, onBack }: { source: ParsedSource; title: string; onBack?: () => void }) {
+function EmbedPlayer({ url, title, onBack, drive = false }: { url: string; title: string; onBack?: () => void; drive?: boolean }) {
+  const containerRef = useRef<HTMLDivElement>(null)
+  const [fullscreen, setFullscreen] = useState(false)
+
+  useEffect(() => {
+    const onChange = () => setFullscreen(Boolean(document.fullscreenElement))
+    document.addEventListener('fullscreenchange', onChange)
+    return () => document.removeEventListener('fullscreenchange', onChange)
+  }, [])
+
+  const toggleFullscreen = () => {
+    if (document.fullscreenElement) void document.exitFullscreen().catch(() => undefined)
+    else void containerRef.current?.requestFullscreen?.().catch(() => undefined)
+  }
+
   return (
-    <div className="relative size-full bg-black">
-      <iframe
-        src={source.url}
-        title={title}
-        className="size-full"
-        allow="autoplay; fullscreen; picture-in-picture; encrypted-media; clipboard-write"
-        allowFullScreen
-        referrerPolicy="strict-origin-when-cross-origin"
-      />
+    <div ref={containerRef} className="relative size-full bg-black">
+      {drive ? (
+        <DriveEmbed src={url} title={title} className="size-full" />
+      ) : (
+        <iframe
+          src={url}
+          title={title}
+          className="size-full"
+          allow="autoplay; fullscreen; picture-in-picture; encrypted-media; clipboard-write"
+          allowFullScreen
+          referrerPolicy="strict-origin-when-cross-origin"
+        />
+      )}
       {onBack && (
         <button
           type="button"
@@ -57,6 +88,17 @@ function EmbedPlayer({ source, title, onBack }: { source: ParsedSource; title: s
           className="absolute top-4 left-4 inline-flex items-center gap-2 rounded-full bg-black/60 px-4 py-2 text-sm font-semibold backdrop-blur transition hover:bg-black/80"
         >
           <ArrowLeft className="size-4" /> Volver
+        </button>
+      )}
+      {drive && document.fullscreenEnabled && (
+        <button
+          type="button"
+          onClick={toggleFullscreen}
+          className="absolute top-4 right-4 inline-flex size-10 items-center justify-center rounded-full bg-black/60 backdrop-blur transition hover:bg-black/80"
+          aria-label={fullscreen ? 'Salir de pantalla completa' : 'Pantalla completa'}
+          title={fullscreen ? 'Salir de pantalla completa' : 'Pantalla completa'}
+        >
+          {fullscreen ? <Minimize className="size-5" /> : <Maximize className="size-5" />}
         </button>
       )}
     </div>
@@ -78,7 +120,20 @@ const MEDIA_ERRORS: Record<number, string> = {
   4: 'Formato no compatible o enlace inaccesible. Usa MP4 (H.264), WebM o HLS (.m3u8).',
 }
 
-function NativePlayer({ source, title, poster, autoPlay = true, startAt, onBack, onEnded, onProgress }: PlayerProps & { source: ParsedSource }) {
+/** Tiempo máximo para que Drive entregue el video antes de pasar a su visor. */
+const DRIVE_LOAD_TIMEOUT_MS = 12000
+
+function NativePlayer({
+  source,
+  title,
+  poster,
+  autoPlay = true,
+  startAt,
+  onBack,
+  onEnded,
+  onProgress,
+  onUnplayable,
+}: PlayerProps & { source: ParsedSource; onUnplayable?: () => void }) {
   const containerRef = useRef<HTMLDivElement>(null)
   const videoRef = useRef<HTMLVideoElement>(null)
   const hideTimer = useRef<number | undefined>(undefined)
@@ -141,6 +196,16 @@ function NativePlayer({ source, title, poster, autoPlay = true, startAt, onBack,
     }
     // volume/muted se aplican solo al cargar; después los controla el usuario.
   }, [source, attempt]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Si Drive no entrega el archivo a tiempo (p. ej. pide confirmación), se usa su visor.
+  const unplayableTimer = useRef<number | undefined>(undefined)
+  useEffect(() => {
+    if (!onUnplayable) return
+    unplayableTimer.current = window.setTimeout(() => {
+      if (!videoRef.current || videoRef.current.readyState < 1) onUnplayable()
+    }, DRIVE_LOAD_TIMEOUT_MS)
+    return () => window.clearTimeout(unplayableTimer.current)
+  }, [source, onUnplayable])
 
   // -------- Controles que se ocultan solos mientras se reproduce
   const revealControls = useCallback(() => {
@@ -298,6 +363,7 @@ function NativePlayer({ source, title, poster, autoPlay = true, startAt, onBack,
   const handleLoadedMetadata = () => {
     const v = videoRef.current
     if (!v) return
+    window.clearTimeout(unplayableTimer.current)
     setDuration(Number.isFinite(v.duration) ? v.duration : 0)
     if (startAt && Number.isFinite(v.duration) && startAt < v.duration - 5) v.currentTime = startAt
     if (autoPlay) v.play().catch(() => setPlaying(false))
@@ -319,6 +385,7 @@ function NativePlayer({ source, title, poster, autoPlay = true, startAt, onBack,
 
   const handleError = () => {
     const code = videoRef.current?.error?.code
+    if (code && onUnplayable) return onUnplayable()
     if (code) setError(MEDIA_ERRORS[code] ?? 'No se pudo reproducir el video.')
     setWaiting(false)
   }

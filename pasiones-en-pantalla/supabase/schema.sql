@@ -107,6 +107,54 @@ create policy "videos: admins borran" on public.videos
 grant select on public.videos to anon, authenticated;
 grant insert, update, delete on public.videos to authenticated;
 
+-- 2b) Listas de reproducción ----------------------------------------------------
+--    Agrupan videos (capítulos de una novela, temporadas, colecciones). Un video
+--    pertenece como máximo a una lista; playlist_position define el orden.
+create table if not exists public.playlists (
+  id          uuid primary key default gen_random_uuid(),
+  title       text not null check (char_length(title) between 1 and 120),
+  description text not null default '',
+  created_at  timestamptz not null default now(),
+  updated_at  timestamptz not null default now()
+);
+
+alter table public.videos
+  add column if not exists playlist_id uuid references public.playlists (id) on delete set null;
+alter table public.videos
+  add column if not exists playlist_position integer check (playlist_position is null or playlist_position >= 1);
+create index if not exists videos_playlist_idx on public.videos (playlist_id, playlist_position);
+
+drop trigger if exists playlists_set_updated_at on public.playlists;
+create trigger playlists_set_updated_at
+  before update on public.playlists
+  for each row execute function public.set_updated_at();
+
+alter table public.playlists enable row level security;
+
+drop policy if exists "playlists: lectura pública" on public.playlists;
+create policy "playlists: lectura pública" on public.playlists
+  for select to anon, authenticated
+  using (true);
+
+drop policy if exists "playlists: admins crean" on public.playlists;
+create policy "playlists: admins crean" on public.playlists
+  for insert to authenticated
+  with check ((select public.is_admin()));
+
+drop policy if exists "playlists: admins editan" on public.playlists;
+create policy "playlists: admins editan" on public.playlists
+  for update to authenticated
+  using ((select public.is_admin()))
+  with check ((select public.is_admin()));
+
+drop policy if exists "playlists: admins borran" on public.playlists;
+create policy "playlists: admins borran" on public.playlists
+  for delete to authenticated
+  using ((select public.is_admin()));
+
+grant select on public.playlists to anon, authenticated;
+grant insert, update, delete on public.playlists to authenticated;
+
 -- 3) Storage: bucket público "media" para videos y miniaturas -------------------
 --    file_size_limit = null usa el límite global del proyecto
 --    (50 MB en el plan gratuito; configurable en planes de pago).

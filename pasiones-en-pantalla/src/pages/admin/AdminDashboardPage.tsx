@@ -253,7 +253,15 @@ function PublishState({ video }: { video: Video }) {
 }
 
 function Flags({ video }: { video: Video }) {
-  const flags = [video.is_featured && 'Portada', video.is_top10 && 'Top 10', video.is_exclusive && 'Exclusivo', video.ribbon].filter(Boolean)
+  const { getPlaylist } = useCatalog()
+  const playlist = getPlaylist(video.playlist_id)
+  const flags = [
+    playlist && `${playlist.title} #${video.playlist_position ?? '?'}`,
+    video.is_featured && 'Portada',
+    video.is_top10 && 'Top 10',
+    video.is_exclusive && 'Exclusivo',
+    video.ribbon,
+  ].filter(Boolean)
   if (!flags.length) return null
   return (
     <div className="mt-1.5 flex flex-wrap gap-1">

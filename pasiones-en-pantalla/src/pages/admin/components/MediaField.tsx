@@ -2,7 +2,8 @@ import { FileVideo, ImagePlus, Link2, RefreshCw, Trash2, UploadCloud } from 'luc
 import { useEffect, useRef, useState, type DragEvent } from 'react'
 import { useToast } from '../../../context/ToastContext'
 import { formatBytes } from '../../../lib/format'
-import { isEmbed, isValidVideoUrl, parseSource } from '../../../lib/media'
+import { DriveEmbed } from '../../../components/DriveEmbed'
+import { isEmbed, isValidVideoUrl, parseSource, type ParsedSource } from '../../../lib/media'
 
 export interface MediaState {
   mode: 'upload' | 'url'
@@ -167,6 +168,7 @@ export function MediaField({ kind, label, hint, aspect = 'wide', value, onChange
             <p className="text-xs text-muted">
               Detectado: <span className="font-semibold text-white">{parsed.label}</span>
               {isEmbed(parsed.kind) && ' · se reproducirá con el reproductor de esa plataforma'}
+              {parsed.kind === 'drive' && ' · compártelo como "Cualquier persona con el enlace"'}
               {parsed.kind === 'hls' && ' · streaming adaptativo con el reproductor propio'}
             </p>
           )}
@@ -175,7 +177,8 @@ export function MediaField({ kind, label, hint, aspect = 'wide', value, onChange
               <img src={preview} alt="Vista previa" className="absolute inset-0 size-full object-cover" />
             </div>
           )}
-          {preview && parsed && isValidVideoUrl(value.link) && parsed.kind !== 'hls' && (
+          {preview && parsed?.kind === 'drive' && isValidVideoUrl(value.link) && <DriveLinkPreview key={parsed.url} source={parsed} />}
+          {preview && parsed && isValidVideoUrl(value.link) && parsed.kind !== 'hls' && parsed.kind !== 'drive' && (
             <div className="relative aspect-video overflow-hidden rounded-lg bg-black">
               {isEmbed(parsed.kind) ? (
                 <iframe src={parsed.url.replace('autoplay=1', 'autoplay=0')} title="Vista previa" className="absolute inset-0 size-full" allow="fullscreen" />
@@ -193,6 +196,45 @@ export function MediaField({ kind, label, hint, aspect = 'wide', value, onChange
       }} />
       {hint && !error && <p className="mt-2 text-xs text-muted">{hint}</p>}
       {error && <p className="mt-2 text-xs font-medium text-red-300">{error}</p>}
+    </div>
+  )
+}
+
+/** Comprueba si Drive entrega el archivo para el reproductor propio; si no, muestra su visor recortado. */
+function DriveLinkPreview({ source }: { source: ParsedSource }) {
+  const [status, setStatus] = useState<'checking' | 'direct' | 'viewer'>('checking')
+
+  useEffect(() => {
+    const t = window.setTimeout(() => setStatus((s) => (s === 'checking' ? 'viewer' : s)), 12000)
+    return () => window.clearTimeout(t)
+  }, [])
+
+  const note = {
+    checking: { cls: 'text-muted', text: 'Comprobando si Drive permite usar tu reproductor…' },
+    direct: { cls: 'text-emerald-300', text: 'Se reproducirá en tu reproductor, sin la interfaz de Google Drive.' },
+    viewer: {
+      cls: 'text-amber-200',
+      text: 'Drive no entrega este archivo directamente (suele pasar con archivos grandes o muy vistos). Se usará el visor de Drive, sin el botón de abrir en ventana nueva.',
+    },
+  }[status]
+
+  return (
+    <div className="space-y-2">
+      <div className="relative aspect-video overflow-hidden rounded-lg bg-black">
+        {status === 'viewer' ? (
+          <DriveEmbed src={source.fallbackUrl ?? ''} title="Vista previa" className="absolute inset-0" />
+        ) : (
+          <video
+            src={source.url}
+            controls
+            preload="metadata"
+            className="absolute inset-0 size-full object-contain"
+            onLoadedMetadata={() => setStatus('direct')}
+            onError={() => setStatus('viewer')}
+          />
+        )}
+      </div>
+      <p className={`text-xs ${note.cls}`}>{note.text}</p>
     </div>
   )
 }

@@ -1,4 +1,4 @@
-import { Database, ExternalLink, FlaskConical, KeyRound, LayoutDashboard, LogOut, Plus } from 'lucide-react'
+import { Database, ExternalLink, FlaskConical, KeyRound, LayoutDashboard, ListVideo, LogOut, Plus } from 'lucide-react'
 import { useState } from 'react'
 import { Navigate, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { Logo } from '../../components/Logo'
@@ -45,6 +45,9 @@ export default function AdminLayout() {
             <NavLink to="/admin/nuevo" className={tab}>
               <Plus className="size-4" /> Nuevo video
             </NavLink>
+            <NavLink to="/admin/listas" className={tab}>
+              <ListVideo className="size-4" /> Listas
+            </NavLink>
           </nav>
           <div className="ml-auto flex items-center gap-2">
             <span
@@ -78,7 +81,10 @@ export default function AdminLayout() {
             <LayoutDashboard className="size-4" /> Videos
           </NavLink>
           <NavLink to="/admin/nuevo" className={tab}>
-            <Plus className="size-4" /> Nuevo video
+            <Plus className="size-4" /> Nuevo
+          </NavLink>
+          <NavLink to="/admin/listas" className={tab}>
+            <ListVideo className="size-4" /> Listas
           </NavLink>
         </nav>
       </header>
