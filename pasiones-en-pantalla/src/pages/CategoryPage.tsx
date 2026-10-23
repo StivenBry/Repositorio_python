@@ -1,6 +1,7 @@
 import { Film } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
+import { AdSlot } from '../components/AdSlot'
 import { EmptyState } from '../components/States'
 import { GridSkeleton, VideoGrid } from '../components/VideoGrid'
 import { useCatalog } from '../context/CatalogContext'
@@ -45,7 +46,10 @@ export default function CategoryPage() {
         {loading ? (
           <GridSkeleton />
         ) : category ? (
-          <VideoGrid videos={list} />
+          <>
+            <VideoGrid videos={list} />
+            <AdSlot className="mt-12" />
+          </>
         ) : (
           <EmptyState icon={Film} title="Esta categoría no existe">
             <Link to="/buscar" className="btn-primary mt-4">

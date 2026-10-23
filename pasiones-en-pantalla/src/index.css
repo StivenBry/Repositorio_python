@@ -132,6 +132,14 @@
   @apply rounded-2xl border border-line bg-panel/70;
 }
 
+/* Si AdSense no llena el espacio (o hay bloqueador), el bloque no deja un hueco ni etiqueta suelta. */
+.ad-slot:has(ins.adsbygoogle[data-ad-status='unfilled']) {
+  display: none;
+}
+.ad-slot:not(:has(ins.adsbygoogle[data-ad-status='filled'])) > p {
+  visibility: hidden;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

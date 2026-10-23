@@ -1,4 +1,4 @@
-import { defineConfig, type Plugin } from 'vite'
+import { defineConfig, loadEnv, type Plugin } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 
@@ -33,10 +33,43 @@ function absoluteSocialUrls(): Plugin {
   }
 }
 
-export default defineConfig({
-  plugins: [react(), tailwindcss(), absoluteSocialUrls()],
-  build: {
-    target: 'es2022',
-    chunkSizeWarningLimit: 700,
-  },
+const ADSENSE_CLIENT_RE = /^ca-pub-\d{16}$/
+
+/**
+ * Google AdSense: si VITE_ADSENSE_CLIENT es válido, inserta el script y la meta
+ * de verificación en el HTML estático (Google los busca ahí) y genera ads.txt.
+ */
+function googleAdsense(client: string): Plugin {
+  return {
+    name: 'google-adsense',
+    transformIndexHtml() {
+      if (!client) return
+      return [
+        { tag: 'meta', attrs: { name: 'google-adsense-account', content: client }, injectTo: 'head' },
+        {
+          tag: 'script',
+          attrs: { async: true, src: `https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${client}`, crossorigin: 'anonymous' },
+          injectTo: 'head',
+        },
+      ]
+    },
+    generateBundle() {
+      if (!client) return
+      this.emitFile({ type: 'asset', fileName: 'ads.txt', source: `google.com, ${client.replace(/^ca-/, '')}, DIRECT, f08c47fec0942fa0\n` })
+    },
+  }
+}
+
+export default defineConfig(({ mode }) => {
+  const adsClient = (loadEnv(mode, process.cwd(), 'VITE_').VITE_ADSENSE_CLIENT ?? '').trim()
+  if (adsClient && !ADSENSE_CLIENT_RE.test(adsClient)) {
+    console.warn(`[adsense] VITE_ADSENSE_CLIENT="${adsClient}" no tiene el formato ca-pub-XXXXXXXXXXXXXXXX; AdSense queda desactivado.`)
+  }
+  return {
+    plugins: [react(), tailwindcss(), absoluteSocialUrls(), googleAdsense(ADSENSE_CLIENT_RE.test(adsClient) ? adsClient : '')],
+    build: {
+      target: 'es2022',
+      chunkSizeWarningLimit: 700,
+    },
+  }
 })
