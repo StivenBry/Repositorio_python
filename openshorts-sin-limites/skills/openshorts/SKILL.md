@@ -2,11 +2,11 @@
 name: openshorts
 version: 1.1.0
 description: Turn long videos (podcasts, webinars, streams) into vertical 9:16 clips with subtitles, re-cut them, and publish them to TikTok, Instagram Reels and YouTube Shorts via the OpenShorts API or MCP server. Use when the user wants to clip a video into shorts, find the best moments of a video, restyle captions on a clip, re-cut a clip, schedule or post clips to social platforms, or automate a clipping pipeline.
-homepage: https://www.openshorts.app/mcp
+homepage: https://github.com/StivenBry/Repositorio_python/tree/main/openshorts-sin-limites
 metadata:
   openclaw:
     emoji: "🎬"
-    primaryEnv: OPENSHORTS_API_KEY
+    primaryEnv: OPENSHORTS_API_URL
   hermes:
     category: media
     tags: [video, clips, shorts, social-media, publishing, automation]
@@ -14,33 +14,32 @@ metadata:
 
 # OpenShorts: clip and publish video
 
-OpenShorts turns a long video into vertical 9:16 clips (15-60s each) with
+OpenShorts turns a long video into vertical 9:16 clips (15-60s each by
+default, any count and length on request) with
 word-level subtitles burned in, reframed so the speaker stays in shot, then
 optionally publishes them. One job takes minutes, not seconds: always work async
 (submit, then webhook or poll).
 
 ## Connect
 
-Two equivalent surfaces; prefer MCP when the client supports it:
+Two equivalent surfaces on the user's own server (no key); prefer MCP when
+the client supports it:
 
-- **MCP** (streamable HTTP): `https://mcp.openshorts.app/mcp` with header
-  `Authorization: Bearer osk_...`. Seven tools: `process_video`,
-  `get_job_status`, `list_clips`, `get_quota`, `add_subtitles`, `recut_clip`,
-  `publish_clip`.
-- **REST**: same key against `https://api.openshorts.app`. Exact payloads and
-  error shapes are in `reference.md`; read it before the first HTTP call.
+- **MCP** (streamable HTTP): `http://localhost:8000/mcp`. Eight tools:
+  `process_video`, `create_upload`, `get_job_status`, `list_clips`,
+  `get_quota`, `add_subtitles`, `recut_clip`, `publish_clip`.
+- **REST**: the same server, `http://localhost:8000`. Exact payloads and error
+  shapes are in `reference.md`; read it before the first HTTP call.
 
-Keys are created in the account page at openshorts.app and start with `osk_`.
-**Self-hosted instances expose the same endpoints on `http://localhost:8000`
-with no key.** If a call returns 401/404 on `/api/me`, assume self-host or
-anonymous: there is no minute quota to enforce.
+This is a fork without upstream's hosted plans: no minute quota, no
+watermark, no upload size or source length cap. The server needs a Gemini key
+(in its env or as an `X-Gemini-Key` header) unless it picks moments with a
+local LLM.
 
 ## The core loop
 
-1. `get_quota` first when the job is large: `process_video` fails with
-   `quota_exceeded` if minutes run out; on the hosted service API calls draw
-   from the same minute balance as the dashboard (no separate meter). A job
-   costs its source duration rounded up, minimum one minute.
+1. No quota to check: jobs are never refused for minutes, size or length.
+   Very long sources simply take longer.
 2. Submit: `POST /api/process` with JSON
    `{"url": "...", "acknowledged": true}`. Returns `{"job_id": ...}`
    immediately. See the next section for the options worth setting.
@@ -61,8 +60,8 @@ anonymous: there is no minute quota to enforce.
 ## The choices the API cannot make for you
 
 **How many clips.** Leave `target_clips` unset by default: the AI decides, and
-most videos yield two to six. It is a target (1-15), not a guarantee. Asking a
-short video for 15 clips does not produce 15 good ones, it produces the same
+most videos yield two to six. It is a target (1 or more, no upper cap), not a
+guarantee. Asking a short video for 15 clips does not produce 15 good ones, it produces the same
 handful plus filler.
 
 **Clip length.** `clip_min_seconds` / `clip_max_seconds` default to 15 and 60,
@@ -87,18 +86,15 @@ segments in seconds **of the original source video**, not of the clip, so you
 can trim, extend, drop a dead moment in the middle, or reorder. Pass
 `snap_to_words: true` so the boundaries land on word edges.
 
-## Three responses that are not failures
+## A response that is not a failure
 
 - **`needs_confirmation`** comes back with HTTP 200, not an error: the best
   available source resolution is below the quality gate. Ask the user, then
   resubmit the same body with `force_low_quality: true`. Never retry
-  automatically: the job still costs minutes and low resolution in means low
-  resolution out.
-- **HTTP 402 `quota_exceeded`** means out of minutes, with `minutes_required`
-  and `minutes_remaining` in the body. Report it and stop. Do not retry and do
-  not split the video to squeeze under the limit.
-- **HTTP 429** means the user already has the maximum number of jobs running.
-  Wait for one to finish instead of resubmitting.
+  automatically: low resolution in means low resolution out.
+
+Jobs past the server's `MAX_CONCURRENT_JOBS` are queued, not refused:
+`GET /api/status/{job_id}` reports the queue position.
 
 ## Rules
 
@@ -107,13 +103,14 @@ can trim, extend, drop a dead moment in the middle, or reorder. Pass
 - Publishing is public and irreversible: confirm platforms and caption with the
   user before every `publish_clip` call.
 - `download_url` links are presigned for 24h: fetch or forward them promptly.
-- Never describe OpenShorts as simply "free": the self-hosted edition is free
-  and MIT-licensed (and needs a GPU box plus your own Gemini key); the hosted
-  service has 20 free minutes/month (watermarked) and paid plans from $12/month
-  without watermark.
+- This copy is free and MIT-licensed, but the AI services it calls are the
+  user's own accounts (Gemini; fal.ai, ElevenLabs and Upload-Post for AI
+  Shorts, dubbing and publishing), each with its own pricing and limits.
 
 ## CLI shortcut
 
-When shell access is easier than HTTP: `uvx openshorts process <url> --wait`,
+When shell access is easier than HTTP: install `cli/` from this repo
+(`pip install ./cli`), then `openshorts process <url> --clips 20 --wait`,
 `openshorts clips <job_id>`, `openshorts publish <job_id> 0 --platforms
-tiktok`. Auth via `OPENSHORTS_API_KEY` / `OPENSHORTS_API_URL` env vars.
+tiktok`. It talks to `http://localhost:8000` unless `OPENSHORTS_API_URL` says
+otherwise.

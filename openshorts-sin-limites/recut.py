@@ -27,11 +27,11 @@ import uuid
 from ffmpeg_utils import (METADATA_SCRUB, QUALITY_FAST, audio_encode_args,
                           video_encode_args)
 
-# EDL limits. Deliberately generous — the editor is for humans fixing cuts,
-# not for stitching feature films.
-MAX_SEGMENTS = 12
+# EDL limits. 0 (the default) means no cap; upstream allowed at most 12
+# segments and 180s per edited clip. Set them in the env to bring caps back.
+MAX_SEGMENTS = int(os.environ.get("RECUT_MAX_SEGMENTS", "0") or 0)
 MIN_SEGMENT_SECONDS = 0.5
-MAX_TOTAL_SECONDS = 180.0
+MAX_TOTAL_SECONDS = float(os.environ.get("RECUT_MAX_TOTAL_SECONDS", "0") or 0)
 
 # Segments may start/end a hair outside the canonical range through float
 # round-tripping; treat them as inside.
@@ -50,7 +50,7 @@ def normalize_segments(segments, source_duration=None):
     """
     if not isinstance(segments, (list, tuple)) or not segments:
         raise RecutError("segments must be a non-empty list")
-    if len(segments) > MAX_SEGMENTS:
+    if MAX_SEGMENTS > 0 and len(segments) > MAX_SEGMENTS:
         raise RecutError(f"too many segments (max {MAX_SEGMENTS})")
 
     normalized = []
@@ -71,7 +71,7 @@ def normalize_segments(segments, source_duration=None):
                 f"segment {i + 1} is shorter than {MIN_SEGMENT_SECONDS}s")
         normalized.append({"start": round(start, 3), "end": round(end, 3)})
 
-    if total_duration(normalized) > MAX_TOTAL_SECONDS:
+    if MAX_TOTAL_SECONDS > 0 and total_duration(normalized) > MAX_TOTAL_SECONDS:
         raise RecutError(f"clip would exceed {MAX_TOTAL_SECONDS:.0f}s")
     return normalized
 
@@ -118,7 +118,8 @@ def snap_segments(segments, transcript, source_duration):
     for seg in segments:
         start, end = snap_clip_to_words(
             seg["start"], seg["end"], words, source_duration,
-            min_duration=MIN_SEGMENT_SECONDS, max_duration=MAX_TOTAL_SECONDS)
+            min_duration=MIN_SEGMENT_SECONDS,
+            max_duration=MAX_TOTAL_SECONDS if MAX_TOTAL_SECONDS > 0 else float("inf"))
         snapped.append({"start": start, "end": end})
     return snapped
 

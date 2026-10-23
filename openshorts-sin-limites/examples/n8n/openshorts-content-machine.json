@@ -83,7 +83,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "https://api.openshorts.app/api/process",
+        "url": "http://localhost:8000/api/process",
         "authentication": "genericCredentialType",
         "genericAuthType": "httpHeaderAuth",
         "sendBody": true,
@@ -142,7 +142,7 @@
     {
       "parameters": {
         "chatId": "={{ $('Settings').first().json.telegram_chat_id }}",
-        "text": "\u26a0\ufe0f Autopilot paused: OpenShorts rejected the job (most likely you're out of minutes this month). The video was NOT marked as processed, so it will be retried tomorrow. Top up or upgrade at https://www.openshorts.app/",
+        "text": "\u26a0\ufe0f Autopilot paused: OpenShorts rejected the job (check the server log). The video was NOT marked as processed, so it will be retried tomorrow.",
         "additionalFields": {}
       },
       "id": "tg-quota",
@@ -445,7 +445,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "https://api.openshorts.app/api/social/post",
+        "url": "http://localhost:8000/api/social/post",
         "authentication": "genericCredentialType",
         "genericAuthType": "httpHeaderAuth",
         "sendBody": true,
@@ -569,7 +569,7 @@
     },
     {
       "parameters": {
-        "url": "https://api.openshorts.app/api/social/analytics/impressions",
+        "url": "http://localhost:8000/api/social/analytics/impressions",
         "authentication": "genericCredentialType",
         "genericAuthType": "httpHeaderAuth",
         "sendQuery": true,
@@ -603,7 +603,7 @@
     },
     {
       "parameters": {
-        "url": "https://api.openshorts.app/api/social/analytics/posts",
+        "url": "http://localhost:8000/api/social/analytics/posts",
         "authentication": "genericCredentialType",
         "genericAuthType": "httpHeaderAuth",
         "sendQuery": true,
@@ -666,7 +666,7 @@
     },
     {
       "parameters": {
-        "url": "https://api.openshorts.app/api/social/scheduled",
+        "url": "http://localhost:8000/api/social/scheduled",
         "authentication": "genericCredentialType",
         "genericAuthType": "httpHeaderAuth",
         "options": {}

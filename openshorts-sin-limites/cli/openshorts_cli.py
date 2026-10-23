@@ -5,10 +5,10 @@ start instantly. Talks to the same REST API the dashboard and the MCP server
 use; nothing here can drift from what the app actually does.
 
 Auth and target come from the environment:
-  OPENSHORTS_API_KEY  osk_... key from the account page (cloud only)
-  OPENSHORTS_API_URL  defaults to https://api.openshorts.app; set to
-                      http://localhost:8000 for a self-hosted instance,
-                      where no key is needed.
+  OPENSHORTS_API_URL  defaults to http://localhost:8000, the self-hosted
+                      server, where no key is needed; point it elsewhere for
+                      another instance.
+  OPENSHORTS_API_KEY  only for upstream's hosted service (osk_... key).
 """
 
 import argparse
@@ -19,7 +19,7 @@ import time
 import urllib.error
 import urllib.request
 
-DEFAULT_API = "https://api.openshorts.app"
+DEFAULT_API = "http://localhost:8000"
 POLL_SECONDS = 10
 
 
@@ -86,6 +86,12 @@ def cmd_process(args):
         body["webhook_url"] = args.webhook
     if args.webhook_secret:
         body["webhook_secret"] = args.webhook_secret
+    if args.clips is not None:
+        body["target_clips"] = args.clips
+    if args.min_seconds is not None:
+        body["clip_min_seconds"] = args.min_seconds
+    if args.max_seconds is not None:
+        body["clip_max_seconds"] = args.max_seconds
     status, payload = _request("POST", "/api/process", body)
     if status >= 400:
         _die(status, payload)
@@ -202,6 +208,9 @@ def main(argv=None):
     p.add_argument("--format", help="output format, e.g. 1080p")
     p.add_argument("--webhook", help="webhook URL fired once when the job ends")
     p.add_argument("--webhook-secret", help="HMAC secret for X-OpenShorts-Signature")
+    p.add_argument("--clips", type=int, help="how many clips to aim for (default: the AI decides)")
+    p.add_argument("--min-seconds", type=float, help="minimum clip length (default 15)")
+    p.add_argument("--max-seconds", type=float, help="maximum clip length (default 60)")
     p.add_argument("--wait", action="store_true", help="stream logs until the job ends")
     p.set_defaults(func=cmd_process)
 

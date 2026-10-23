@@ -89,8 +89,9 @@ function Root() {
     if (hash === '#legal') return 'legal';
     // #landing = explicit landing view (app logo); section anchors keep the landing mounted
     if (['#landing', '#features', '#how-it-works', '#pricing', '#comparison', '#faq'].includes(hash)) return 'landing';
-    if (hash === '#app' || hash.startsWith('#app?') || localStorage.getItem('openshorts_skip_landing') === '1') return 'app';
-    return 'landing';
+    // Self-hosted tool: open straight into the app. The landing (upstream's
+    // page for its hosted plans) stays one click away at #landing.
+    return 'app';
   };
 
   const [view, setView] = useState(resolveView);

@@ -42,7 +42,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "https://api.openshorts.app/api/process",
+        "url": "http://localhost:8000/api/process",
         "authentication": "genericCredentialType",
         "genericAuthType": "httpHeaderAuth",
         "sendBody": true,

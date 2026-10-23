@@ -60,12 +60,21 @@ class TestNormalizeSegments:
         with pytest.raises(recut.RecutError):
             recut.normalize_segments([_seg(99.9, 150)], source_duration=100)
 
-    def test_rejects_too_many_segments(self):
+    def test_no_caps_by_default(self):
+        # This copy lifts upstream's 12 segments / 180s: long, many-cut edits pass.
+        assert recut.MAX_SEGMENTS == 0 and recut.MAX_TOTAL_SECONDS == 0
+        segs = [_seg(i * 30, i * 30 + 25) for i in range(40)]
+        assert len(recut.normalize_segments(segs)) == 40
+        assert recut.normalize_segments([_seg(0, 1800)]) == [_seg(0, 1800)]
+
+    def test_rejects_too_many_segments(self, monkeypatch):
+        monkeypatch.setattr(recut, "MAX_SEGMENTS", 12)
         segs = [_seg(i * 10, i * 10 + 5) for i in range(recut.MAX_SEGMENTS + 1)]
         with pytest.raises(recut.RecutError):
             recut.normalize_segments(segs)
 
-    def test_rejects_total_over_cap(self):
+    def test_rejects_total_over_cap(self, monkeypatch):
+        monkeypatch.setattr(recut, "MAX_TOTAL_SECONDS", 180.0)
         with pytest.raises(recut.RecutError):
             recut.normalize_segments([_seg(0, recut.MAX_TOTAL_SECONDS + 10)])
 

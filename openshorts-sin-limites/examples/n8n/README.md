@@ -1,29 +1,25 @@
-# OpenShorts + n8n
+# OpenShorts Sin Límites + n8n
 
-Two importable workflows, from a one-shot clipper to a full channel autopilot.
-Both work out of the box with [OpenShorts Cloud](https://www.openshorts.app/)
-(free tier: 20 min of video, paid plans from $12/mo). OpenShorts is also open
-source: self-hosters can point either workflow at their own instance by
-changing the base URL (needs a GPU box, your own Gemini key, and your own
-[Upload-Post](https://www.upload-post.com/) account for the posting steps).
+Dos workflows importables, ya apuntando a tu servidor (`http://localhost:8000`).
+Si n8n corre en Docker, cambia esa dirección en los nodos HTTP por
+`http://host.docker.internal:8000` (o la IP de tu servidor).
 
-| Workflow | What it does | Credentials |
-|---|---|---|
-| `openshorts-clip-and-notify.json` | A video URL goes in through a form, clips come back on a signed webhook. No polling. | OpenShorts API key |
-| `openshorts-content-machine.json` | Your YouTube channel on autopilot: daily clipping, approval buttons in Telegram, drip-scheduled posting, weekly analytics digest. | OpenShorts API key + Telegram bot |
+| Workflow | Qué hace |
+|---|---|
+| `openshorts-clip-and-notify.json` | Entra una URL por un formulario y los clips vuelven por un webhook firmado. Sin sondeos. |
+| `openshorts-content-machine.json` | Tu canal de YouTube en piloto automático: un vídeo al día, botones de aprobación en Telegram, publicación escalonada y resumen semanal de estadísticas. |
 
-## Shared setup
+## Configuración común
 
-1. In n8n: **Workflows → Import from file** → pick the workflow.
-2. Create a **Header Auth** credential named `OpenShorts API key`:
-   - Name: `Authorization`
-   - Value: `Bearer osk_...` (create the key in your account page at
-     [openshorts.app](https://www.openshorts.app/))
-3. Open the **Clips ready (webhook)** node, copy its production URL, and paste
-   it as `webhook_url` inside the **Start OpenShorts job** node body.
-4. Optional: change `webhook_secret`. OpenShorts signs the webhook body with
-   HMAC-SHA256 and sends it as `X-OpenShorts-Signature: sha256=<hex>`; verify
-   it in a Code node with:
+1. En n8n: **Workflows → Import from file** y elige el workflow.
+2. Los nodos usan una credencial **Header Auth** llamada `OpenShorts API key`.
+   Tu servidor no pide clave: crea esa credencial con cualquier valor (por
+   ejemplo `Authorization` / `Bearer local`).
+3. Abre el nodo **Clips ready (webhook)**, copia su URL de producción y pégala
+   como `webhook_url` en el cuerpo del nodo **Start OpenShorts job**.
+4. Opcional: cambia `webhook_secret`. El servidor firma el cuerpo con
+   HMAC-SHA256 en `X-OpenShorts-Signature: sha256=<hex>`; verifícalo en un nodo
+   Code con:
 
    ```javascript
    const crypto = require('crypto');
@@ -33,45 +29,25 @@ changing the base URL (needs a GPU box, your own Gemini key, and your own
      .digest('hex');
    ```
 
-## The Content Machine
+## Publicar desde n8n (Content Machine)
 
-`openshorts-content-machine.json` runs your channel in four acts:
+La publicación usa tu cuenta de [Upload-Post](https://www.upload-post.com/):
 
-1. **Watch** — once a day it reads your channel's RSS feed
-   (`https://www.youtube.com/feeds/videos.xml?channel_id=UC...`) and clips
-   **one** video: the newest upload if there is one, otherwise the next
-   unprocessed video from your back catalog. One video a day keeps quota burn
-   predictable; a 402 (out of minutes) pauses the machine and tells you on
-   Telegram instead of failing silently.
-2. **Approve from your phone** — every finished clip lands in Telegram with
-   ✅ Publish / ❌ Skip buttons. Clips over Telegram's ~20 MB URL limit fall
-   back to a link message with the same buttons.
-3. **Drip-publish** — each approved clip takes the next free daily slot and is
-   scheduled through `POST /api/social/post` to every account you connected in
-   OpenShorts (TikTok, Instagram, YouTube). Approve five clips today, fill five
-   days of content. The slot comes from the queue the server actually holds
-   (`GET /api/social/scheduled`), so two clips approved seconds apart cannot
-   book the same one.
-4. **Sunday digest** — the machine reads the analytics of what it published
-   (`GET /api/social/analytics/*`) and reports total impressions, per-platform
-   split, and your best post of the week.
+- Pon `UPLOAD_POST_API_KEY=...` en el `.env` del servidor.
+- En el cuerpo del nodo **Schedule social post** añade
+  `"user_id": "<tu perfil de Upload-Post>"`.
+- En los nodos que leen la cola y las estadísticas (`/api/social/scheduled`,
+  `/api/social/analytics/...`) añade el parámetro `?user=<tu perfil>`.
 
-Machine-specific setup, all inside sticky notes on the canvas:
+Y para Telegram: crea un bot con [@BotFather](https://t.me/BotFather), añade la
+credencial `Telegram bot` y cambia `YOUR_TELEGRAM_CHAT_ID` en los nodos de aviso.
+Pon el id de tu canal en el nodo **Channel RSS feed**.
 
-- Put your channel id in the **Channel RSS feed** node.
-- Create a Telegram bot with [@BotFather](https://t.me/BotFather), add the
-  `Telegram bot` credential, and replace `YOUR_TELEGRAM_CHAT_ID` in the
-  notification nodes (message your bot, then check
-  `api.telegram.org/bot<token>/getUpdates` for your chat id).
-- Connect your social accounts in your OpenShorts account page (Cloud) — the
-  posting step uses them directly; no extra social credentials in n8n.
+El workflow recuerda qué vídeos ya procesó en los datos estáticos de n8n, que
+solo se guardan en ejecuciones de **producción** (las pruebas en el editor no
+avanzan).
 
-Note: the machine remembers which videos it already processed in n8n workflow
-static data, which only persists for **production** executions — test runs in
-the editor won't advance it. Scheduling deliberately does *not* use that
-mechanism (see act 3).
-
-## Webhook payload
+## Carga del webhook
 
 ```json
 {
@@ -84,21 +60,7 @@ mechanism (see act 3).
 }
 ```
 
-Failed jobs fire the same webhook with `"event": "job.failed"` and an `error`
-field, so the flow never hangs waiting.
+Los trabajos fallidos disparan el mismo webhook con `"event": "job.failed"` y un
+campo `error`, así el flujo nunca se queda esperando.
 
-`download_url` is a 24-hour presigned link to the archived clip (hosted
-service). On the self-hosted edition the same workflow runs against
-`http://localhost:8000` with no API key.
-
-## Publishing and analytics API
-
-Direct posting: `POST /api/social/post` (accepts `scheduled_date`, ISO-8601).
-Publishing queue: `GET /api/social/scheduled`, and
-`DELETE /api/social/scheduled/{job_id}` to cancel one before it goes out.
-Analytics of what you published: `GET /api/social/analytics` (profile totals),
-`GET /api/social/analytics/posts` (per-post metrics),
-`GET /api/social/analytics/impressions` (windowed totals, `period=last_week`).
-Full API reference: [api.openshorts.app/docs](https://api.openshorts.app/docs).
-Agent-native version of the same pipeline (MCP):
-[openshorts.app/mcp](https://www.openshorts.app/mcp).
+Referencia completa de la API: `http://localhost:8000/docs` en tu servidor.

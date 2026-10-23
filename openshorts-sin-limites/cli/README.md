@@ -1,32 +1,31 @@
-# OpenShorts CLI
+# CLI de OpenShorts Sin Límites
 
-Clip long videos into vertical 9:16 shorts from the terminal. Zero
-dependencies; talks to the same API the dashboard, the MCP server and the
-webhooks use.
+Recorta vídeos largos en shorts verticales 9:16 desde la terminal. Sin
+dependencias; usa la misma API que el panel, el servidor MCP y los webhooks.
+
+Instálalo desde esta carpeta (el paquete `openshorts` de PyPI es el original y
+apunta al servicio de pago):
 
 ```bash
-pip install openshorts        # or: uvx openshorts / pipx run openshorts
+pip install ./cli             # desde openshorts-sin-limites/
 
-export OPENSHORTS_API_KEY=osk_...   # from your account page at openshorts.app
-
+# Por defecto habla con tu servidor local (http://localhost:8000), sin clave.
 openshorts process "https://youtube.com/watch?v=..." --wait
+openshorts process "https://youtube.com/watch?v=..." --clips 30 --max-seconds 300 --wait
 openshorts clips <job_id>
 openshorts publish <job_id> 0 --platforms tiktok,youtube
-openshorts quota
 ```
 
-Self-hosted instance? Point it at your own machine and skip the key:
+¿El servidor está en otra máquina? Cambia la dirección:
 
 ```bash
-export OPENSHORTS_API_URL=http://localhost:8000
-openshorts process "https://youtube.com/watch?v=..." --wait
+export OPENSHORTS_API_URL=http://mi-servidor:8000
 ```
 
-For pipelines, prefer the webhook to `--wait`: pass `--webhook` and
-`--webhook-secret` and OpenShorts POSTs once (HMAC-signed,
-`X-OpenShorts-Signature: sha256=<hex>`) when the job ends, with clip titles
-and durable download links.
+Para automatizaciones, mejor el webhook que `--wait`: pasa `--webhook` y
+`--webhook-secret` y el servidor hace un único POST (firmado con HMAC,
+`X-OpenShorts-Signature: sha256=<hex>`) cuando el trabajo termina, con los
+títulos de los clips y enlaces de descarga.
 
-The hosted free tier is 20 minutes/month with a watermark; paid plans from
-$12/month. The self-hosted edition is MIT and has no meter. Agent-native
-version of the same surface: [openshorts.app/mcp](https://www.openshorts.app/mcp).
+Esta copia no tiene cuota de minutos ni marca de agua: `openshorts quota`
+responde que no hay cuota.

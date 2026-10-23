@@ -299,6 +299,10 @@ class TestScoreBatches:
 
 
 class TestShortlistTarget:
+    @pytest.fixture(autouse=True)
+    def _no_target(self, monkeypatch):
+        monkeypatch.delenv("CLIP_TARGET_MAX", raising=False)
+
     def test_scales_with_duration_and_is_capped(self):
         assert shortlist_target(60) == 3          # floor
         assert shortlist_target(9 * 60) == 8      # the measured job
@@ -308,3 +312,10 @@ class TestShortlistTarget:
     def test_degenerate_input_does_not_crash(self):
         assert shortlist_target(None) == 3
         assert shortlist_target("nonsense") == 3
+
+    def test_explicit_clip_count_lifts_the_cap(self, monkeypatch):
+        # target_clips=30 must reach the detail pass with 30 windows, not 10.
+        monkeypatch.setenv("CLIP_TARGET_MAX", "30")
+        assert shortlist_target(3 * 60 * 60) == 30
+        monkeypatch.setenv("CLIP_TARGET_MAX", "2")
+        assert shortlist_target(9 * 60) == 8      # never below the default

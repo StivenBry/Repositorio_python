@@ -100,7 +100,14 @@ def client_ip(request: Request) -> str:
     return (request.client.host if request.client else "") or "unknown"
 
 
+# Off by default: on your own server the tools have no per-IP or daily cap.
+# Set FREE_TOOLS_RATE_LIMIT=1 to apply LIMITS (e.g. when the instance is public).
+RATE_LIMIT_ENABLED = os.environ.get("FREE_TOOLS_RATE_LIMIT", "").lower() in ("1", "true", "yes")
+
+
 def _enforce(tool: str, request: Request):
+    if not RATE_LIMIT_ENABLED:
+        return
     reason = _limiter.check(tool, client_ip(request))
     if reason == "ip":
         raise HTTPException(status_code=429, detail={

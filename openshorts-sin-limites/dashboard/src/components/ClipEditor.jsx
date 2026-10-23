@@ -203,7 +203,16 @@ export default function ClipEditor({ jobId, clipIndex, clipTitle, onClose, onRer
     const sourceAvailable = !!edl?.source?.available;
     const sourceDuration = edl?.source?.duration || 0;
     const canonical = useMemo(() => edl?.canonical_range || { start: 0, end: 0 }, [edl]);
-    const limits = edl?.limits || { max_segments: 12, min_segment_seconds: MIN_SEGMENT_SECONDS, max_total_seconds: 180 };
+    // A missing or null cap means "no cap": this copy lifts upstream's 12
+    // segments / 180s, and the server reports them as null.
+    const limits = useMemo(() => {
+        const l = edl?.limits || {};
+        return {
+            max_segments: l.max_segments ?? Infinity,
+            min_segment_seconds: l.min_segment_seconds || MIN_SEGMENT_SECONDS,
+            max_total_seconds: l.max_total_seconds ?? Infinity,
+        };
+    }, [edl]);
     const minSeg = limits.min_segment_seconds || MIN_SEGMENT_SECONDS;
 
     // The source panel is on screen only when there IS a source and the user
@@ -1402,7 +1411,7 @@ export default function ClipEditor({ jobId, clipIndex, clipTitle, onClose, onRer
                         {/* segments */}
                         <div>
                             <div className="flex items-center justify-between mb-2">
-                                <p className="eyebrow">Segments · {segments.length}/{limits.max_segments}</p>
+                                <p className="eyebrow">Segments · {segments.length}{Number.isFinite(limits.max_segments) ? `/${limits.max_segments}` : ''}</p>
                                 <div className="flex items-center gap-1">
                                     <button className="p-1.5 rounded-input text-muted hover:text-ink hover:bg-paper3 disabled:opacity-45" disabled={!state.past.length} onClick={() => dispatch({ type: 'undo' })} aria-label="undo"><Undo2 size={14} /></button>
                                     <button className="p-1.5 rounded-input text-muted hover:text-ink hover:bg-paper3 disabled:opacity-45" disabled={!state.future.length} onClick={() => dispatch({ type: 'redo' })} aria-label="redo"><Redo2 size={14} /></button>

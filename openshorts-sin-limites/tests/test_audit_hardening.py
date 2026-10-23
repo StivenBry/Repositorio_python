@@ -133,7 +133,8 @@ def test_low_quality_confirmation_releases_the_reservation(dirs, calls):
     assert app_module.jobs == {}
 
 
-def test_short_source_rejection_releases_the_reservation(dirs, calls):
+def test_short_source_rejection_releases_the_reservation(dirs, calls, monkeypatch):
+    monkeypatch.setattr(app_module, "MIN_SOURCE_SECONDS", 45)  # off by default here
     calls["probe_result"][0] = {"max_height": 1080, "duration": 20}
     resp = _post_process({"url": "https://www.youtube.com/watch?v=short", "acknowledged": True})
     assert resp.status_code == 400

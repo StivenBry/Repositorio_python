@@ -256,9 +256,10 @@ const readableError = (raw) => {
   } catch (_) { /* not JSON */ }
   return text.replace(/^Error:\s*/, '').slice(0, 300) || 'Something went wrong.';
 };
-// Matches the self-host JOB_RETENTION_SECONDS default. A restore whose job was
+// The server keeps jobs until you delete them (JOB_RETENTION_SECONDS=0 by
+// default), so a saved session does not expire here. A restore whose job was
 // already purged server-side fails gracefully and clears the saved session.
-const SESSION_MAX_AGE = 86400000; // 24 hours
+const SESSION_MAX_AGE = Infinity;
 
 // Mock polling function
 const pollJob = async (jobId) => {

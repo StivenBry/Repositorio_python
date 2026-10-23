@@ -6,6 +6,9 @@ The gate rejects such sources at submit, on all three ingest paths, with the
 duration probes stubbed at their seams (_probe_youtube_quality for URLs,
 _media_duration_seconds for local files). Probe failures (duration 0) fail
 open — the job starts normally.
+
+This copy ships the gate off (MIN_SOURCE_SECONDS=0): the ``gate_on`` fixture
+turns it back on to test it, and the last URL test pins the default.
 """
 
 import asyncio
@@ -40,20 +43,25 @@ def dirs(tmp_path, monkeypatch):
     return out_root, up_root
 
 
+@pytest.fixture()
+def gate_on(monkeypatch):
+    monkeypatch.setattr(app_module, "MIN_SOURCE_SECONDS", 45)
+
+
 def _stub_probe(monkeypatch, duration, max_height=1080):
     async def _probe(url):
         return {"max_height": max_height, "duration": duration}
     monkeypatch.setattr(app_module, "_probe_youtube_quality", _probe)
 
 
-def test_short_url_source_is_rejected(dirs, monkeypatch):
+def test_short_url_source_is_rejected(dirs, gate_on, monkeypatch):
     _stub_probe(monkeypatch, duration=24)
     resp = _post_process({"url": "https://www.youtube.com/watch?v=short", "acknowledged": True})
     assert resp.status_code == 400
     assert "24s" in resp.json()["detail"]
 
 
-def test_short_url_rejected_even_with_force_low_quality(dirs, monkeypatch):
+def test_short_url_rejected_even_with_force_low_quality(dirs, gate_on, monkeypatch):
     """force_low_quality skips the quality confirm, not the short-source gate."""
     _stub_probe(monkeypatch, duration=24, max_height=360)
     resp = _post_process({"url": "https://www.youtube.com/watch?v=short",
@@ -61,27 +69,27 @@ def test_short_url_rejected_even_with_force_low_quality(dirs, monkeypatch):
     assert resp.status_code == 400
 
 
-def test_unknown_duration_fails_open(dirs, monkeypatch):
+def test_unknown_duration_fails_open(dirs, gate_on, monkeypatch):
     _stub_probe(monkeypatch, duration=0)
     resp = _post_process({"url": "https://www.youtube.com/watch?v=ok", "acknowledged": True})
     assert resp.status_code == 200
     assert "job_id" in resp.json()
 
 
-def test_long_url_source_passes(dirs, monkeypatch):
+def test_long_url_source_passes(dirs, gate_on, monkeypatch):
     _stub_probe(monkeypatch, duration=600)
     resp = _post_process({"url": "https://www.youtube.com/watch?v=ok", "acknowledged": True})
     assert resp.status_code == 200
 
 
-def test_gate_disabled_lets_short_sources_through(dirs, monkeypatch):
+def test_gate_is_off_by_default(dirs, monkeypatch):
     _stub_probe(monkeypatch, duration=24)
-    monkeypatch.setattr(app_module, "MIN_SOURCE_SECONDS", 0)
+    assert app_module.MIN_SOURCE_SECONDS == 0
     resp = _post_process({"url": "https://www.youtube.com/watch?v=short", "acknowledged": True})
     assert resp.status_code == 200
 
 
-def test_short_upload_is_rejected_and_cleaned_up(dirs, monkeypatch):
+def test_short_upload_is_rejected_and_cleaned_up(dirs, gate_on, monkeypatch):
     out_root, up_root = dirs
     monkeypatch.setattr(app_module, "_media_duration_seconds", lambda path: 24.0)
     resp = _post_process(files={"file": ("short.mp4", b"fake-bytes", "video/mp4")},
@@ -93,7 +101,7 @@ def test_short_upload_is_rejected_and_cleaned_up(dirs, monkeypatch):
     assert os.listdir(out_root) == []
 
 
-def test_short_thumbnail_session_is_rejected(dirs, monkeypatch):
+def test_short_thumbnail_session_is_rejected(dirs, gate_on, monkeypatch):
     out_root, up_root = dirs
     video = up_root / "thumb_sess1_source.mp4"
     video.write_bytes(b"fake-video-bytes")

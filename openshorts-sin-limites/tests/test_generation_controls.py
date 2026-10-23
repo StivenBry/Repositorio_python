@@ -27,10 +27,21 @@ class TestClipDurationBounds:
         monkeypatch.setenv("CLIP_MAX_SECONDS", "30")
         assert clip_selection.clip_duration_bounds() == (20.0, 30.0)
 
-    def test_clamped_to_platform_limits(self, monkeypatch):
+    def test_floor_but_no_ceiling(self, monkeypatch):
+        # Upstream clamped to 180s; this copy keeps only the 5s / 10s floor.
         monkeypatch.setenv("CLIP_MIN_SECONDS", "1")
         monkeypatch.setenv("CLIP_MAX_SECONDS", "9999")
-        assert clip_selection.clip_duration_bounds() == (5.0, 180.0)
+        assert clip_selection.clip_duration_bounds() == (5.0, 9999.0)
+
+    def test_long_band_is_kept(self, monkeypatch):
+        monkeypatch.setenv("CLIP_MIN_SECONDS", "300")
+        monkeypatch.setenv("CLIP_MAX_SECONDS", "600")
+        assert clip_selection.clip_duration_bounds() == (300.0, 600.0)
+
+    def test_non_finite_falls_back_to_defaults(self, monkeypatch):
+        monkeypatch.setenv("CLIP_MIN_SECONDS", "inf")
+        monkeypatch.setenv("CLIP_MAX_SECONDS", "nan")
+        assert clip_selection.clip_duration_bounds() == (15.0, 60.0)
 
     def test_degenerate_band_keeps_a_real_range(self, monkeypatch):
         # max below min must widen, not invert or collapse.

@@ -28,13 +28,16 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import HTMLResponse, FileResponse, JSONResponse
 from starlette.background import BackgroundTask
 from pydantic import BaseModel
+
+# Before the local imports below: recut and media_auth read their caps from the
+# env at import time, so a value set in .env must already be there.
+load_dotenv()
+
 from s3_uploader import upload_job_artifacts, list_all_clips, upload_actor_to_s3, list_actor_gallery, upload_video_to_gallery, list_video_gallery
 import recut
 import layout_ranges
 import watermarked
 import media_auth
-
-load_dotenv()
 
 # Constants
 UPLOAD_DIR = "uploads"
@@ -43,9 +46,11 @@ os.makedirs(UPLOAD_DIR, exist_ok=True)
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
 # Configuration
-# Default to 1 if not set, but user can set higher for powerful servers
+# Jobs that run at once; the rest wait in the queue (nothing is refused).
+# Raise it on a machine with more RAM/VRAM.
 MAX_CONCURRENT_JOBS = int(os.environ.get("MAX_CONCURRENT_JOBS", "5"))
-MAX_FILE_SIZE_MB = 2048  # 2GB limit
+# Upload size cap in MB. 0 (the default) means no cap; upstream hard-coded 2 GB.
+MAX_FILE_SIZE_MB = int(os.environ.get("MAX_FILE_SIZE_MB", "0"))
 
 # How TikTok receives our uploads. MEDIA_UPLOAD lands the video in the user's
 # TikTok drafts so they finish the post inside TikTok's own editor; DIRECT_POST
@@ -56,20 +61,19 @@ MAX_FILE_SIZE_MB = 2048  # 2GB limit
 # where covers, sounds and hashtags actually get chosen. The UI must say so —
 # a user who expects a published post and finds a draft will read it as a bug.
 TIKTOK_POST_MODE = os.environ.get("TIKTOK_POST_MODE", "MEDIA_UPLOAD").strip()
-# Ceiling for the working directory once it lives on a persistent volume: the
-# age-based sweep alone can't stop a burst of long videos from filling the disk.
-# 0 disables the cap.
-OUTPUT_MAX_GB = int(os.environ.get("OUTPUT_MAX_GB", "25"))
-# Same idea for source uploads, which are the biggest single files on disk.
-UPLOADS_MAX_GB = int(os.environ.get("UPLOADS_MAX_GB", "15"))
+# Ceiling for the working directory: past it the oldest jobs are deleted.
+# 0 (the default) disables the cap, so nothing is deleted for size; upstream
+# defaulted to 25 GB. Set it if the disk is small.
+OUTPUT_MAX_GB = int(os.environ.get("OUTPUT_MAX_GB", "0"))
+# Same idea for source uploads (upstream default 15 GB). 0 disables it.
+UPLOADS_MAX_GB = int(os.environ.get("UPLOADS_MAX_GB", "0"))
 # Pre-flight quality gate: warn before processing a YouTube source below this
 # height (0 disables). Only applies to URLs; uploads are whatever the user gave.
 QUALITY_GATE_MIN_HEIGHT = int(os.environ.get("QUALITY_GATE_MIN_HEIGHT", "720"))
-# Reject sources shorter than this before starting (0 disables). A 24s YouTube
-# Short cannot yield 15-60s clips: Gemini returns nothing, the job burns
-# managed minutes and dies with "no usable clips" (prod 20-ago: 3 of 5 recent
-# failures were exactly this, one user retrying the same 24s video).
-MIN_SOURCE_SECONDS = int(os.environ.get("MIN_SOURCE_SECONDS", "45"))
+# Reject sources shorter than this before starting. 0 (the default) accepts
+# any length; upstream refused anything under 45s. A very short source may
+# still return no clips at the default 15-60s band: lower clip_min_seconds.
+MIN_SOURCE_SECONDS = int(os.environ.get("MIN_SOURCE_SECONDS", "0"))
 QUALITY_PROBE_SCRIPT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "quality_probe.py")
 
 # Server credentials the pipeline subprocesses (main.py, quality_probe.py) never
@@ -120,18 +124,16 @@ for _stream in (sys.stdout, sys.stderr):
             pass
 
 # ---- Cloud billing (paid / managed-keys) integration --------------------------
-# All paid-mode code lives in the optional `cloud/` package and is imported ONLY
-# when BILLING_ENABLED is set. With the flag off, the app behaves exactly as the
-# self-hosted BYOK app does today (no extra dependencies required).
-BILLING_ENABLED = os.environ.get("BILLING_ENABLED", "").lower() in ("1", "true", "yes")
+# Upstream keeps its paid mode (plans, minute quotas, the free-plan watermark,
+# per-plan job caps) in a `cloud/` package behind BILLING_ENABLED. This copy
+# ships without that package, so the flag is pinned off whatever the env says:
+# every request runs the self-hosted BYOK path, with no quota and no watermark.
+BILLING_ENABLED = False
 
-# Job/file retention (issue #46). Self-host defaults to 24h: the 1h sweep kept
-# deleting finished projects under users who never touched their env, and the
-# OUTPUT_MAX_GB / UPLOADS_MAX_GB caps below already bound the disk. Cloud keeps
-# the tight default because clips are archived to R2 as soon as a job finishes.
-JOB_RETENTION_SECONDS = int(
-    os.environ.get("JOB_RETENTION_SECONDS", "3600" if BILLING_ENABLED else "86400")
-)
+# Job/file retention in seconds. 0 (the default) keeps every job and upload
+# until you delete it; upstream purged them after 24h. Set a positive value
+# (e.g. 86400) to bring the age-based cleanup back.
+JOB_RETENTION_SECONDS = int(os.environ.get("JOB_RETENTION_SECONDS", "0"))
 # The retained download of a URL job (--keep-original) is the one artifact that
 # is a full copy of someone else's video rather than something we made, so it
 # can be aged out ahead of the clips it produced. Defaults to the job clock,
@@ -1575,7 +1577,10 @@ def _upload_job_id(filename: str) -> str:
 
 
 def _sweep_expired_job_dirs(now):
-    """Drop job dirs older than JOB_RETENTION_SECONDS, except live jobs."""
+    """Drop job dirs older than JOB_RETENTION_SECONDS, except live jobs.
+    JOB_RETENTION_SECONDS <= 0 keeps everything."""
+    if JOB_RETENTION_SECONDS <= 0:
+        return
     for job_id in os.listdir(OUTPUT_DIR):
         # Not a job: the thumbnails dir backs a StaticFiles mount, so
         # deleting it would 500 every /thumbnails request until reboot.
@@ -1597,7 +1602,10 @@ def _sweep_expired_job_dirs(now):
 
 def _sweep_expired_uploads(now):
     """Drop source uploads older than JOB_RETENTION_SECONDS, except the source
-    of a job that is still queued or running."""
+    of a job that is still queued or running. JOB_RETENTION_SECONDS <= 0
+    keeps everything."""
+    if JOB_RETENTION_SECONDS <= 0:
+        return
     for filename in os.listdir(UPLOAD_DIR):
         file_path = os.path.join(UPLOAD_DIR, filename)
         try:
@@ -1677,9 +1685,12 @@ def _sweep_retained_sources(now=None):
 
     Only the ``source_video`` a URL job kept in its own directory: an upload is
     the user's own file and ages out with the job like everything else. Yields
-    the job ids it emptied. A no-op unless the knob is set below the job clock.
+    the job ids it emptied. A no-op unless the knob is set (> 0) and below the
+    job clock (or the job clock is off, i.e. jobs are kept forever).
     """
-    if SOURCE_RETENTION_SECONDS >= JOB_RETENTION_SECONDS:
+    if SOURCE_RETENTION_SECONDS <= 0:
+        return
+    if 0 < JOB_RETENTION_SECONDS <= SOURCE_RETENTION_SECONDS:
         return
     now = time.time() if now is None else now
     for job_id in os.listdir(OUTPUT_DIR):
@@ -1733,6 +1744,7 @@ async def cleanup_jobs():
                     if jdata.get("status") in ("completed", "failed")
                     and jdata.get("output_dir")
                     and os.path.isdir(jdata["output_dir"])
+                    and JOB_RETENTION_SECONDS > 0
                     and now - os.path.getmtime(jdata["output_dir"]) > JOB_RETENTION_SECONDS
                 ]
                 for jid in saas_expired:
@@ -2802,6 +2814,9 @@ async def get_config():
         "billingEnabled": BILLING_ENABLED,
         "googleAuthEnabled": bool(BILLING_ENABLED and cloud.settings.google_auth_enabled),
         "jobRetentionSeconds": JOB_RETENTION_SECONDS,
+        # Caps the upload box shows and checks; 0 / None = none (the default).
+        "minSourceSeconds": MIN_SOURCE_SECONDS,
+        "maxFileSizeMb": MAX_FILE_SIZE_MB or None,
         # Self-host only: tells the dashboard the Gemini key is optional
         # because the moment picker runs on an OpenAI-compatible server.
         "localLlm": None if BILLING_ENABLED else llm_backend.describe(),
@@ -2965,7 +2980,7 @@ async def create_upload(request: Request):
         "upload_id": upload_id,
         "upload_url": f"{_upload_url_base(request)}/api/uploads/{upload_id}",
         "method": "PUT",
-        "max_mb": MAX_FILE_SIZE_MB,
+        "max_mb": MAX_FILE_SIZE_MB or None,  # None: no size cap
         "expires_in": UPLOAD_TTL_SECONDS,
         "hint": "PUT the raw video bytes to upload_url (e.g. curl -T video.mp4 <upload_url>), "
                 "then call /api/process (or the process_video tool) with this upload_id. "
@@ -2977,7 +2992,7 @@ async def create_upload(request: Request):
 @app.put("/api/uploads/{upload_id}")
 async def put_upload(upload_id: str, request: Request):
     """Receive the raw video body for a reserved slot. Streams to disk, capped
-    at MAX_FILE_SIZE_MB; a second PUT replaces the first."""
+    at MAX_FILE_SIZE_MB when that is set; a second PUT replaces the first."""
     slot = pending_uploads.get(upload_id)
     if not slot or time.time() - slot["created"] > UPLOAD_TTL_SECONDS:
         pending_uploads.pop(upload_id, None)
@@ -2987,7 +3002,7 @@ async def put_upload(upload_id: str, request: Request):
     with open(slot["path"], "wb") as out:
         async for chunk in request.stream():
             size += len(chunk)
-            if size > limit_bytes:
+            if limit_bytes and size > limit_bytes:
                 out.close()
                 os.remove(slot["path"])
                 raise HTTPException(status_code=413, detail=f"File too large. Max size {MAX_FILE_SIZE_MB}MB")
@@ -3245,24 +3260,27 @@ async def process_endpoint(
     # overrides the A/B harness already reads (clip_selection.py). All three
     # are honest TARGETS, not guarantees — the model may return fewer clips
     # when the material doesn't hold them. Bad values 400 instead of silently
-    # producing something the user didn't ask for.
-    def _gen_control(raw, name, lo, hi, integer=False):
+    # producing something the user didn't ask for. Only a floor is enforced:
+    # upstream also capped the count at 15 clips and the length at 180s.
+    def _gen_control(raw, name, lo, integer=False):
         if raw in (None, ""):
             return None
         try:
             val = float(raw)
         except (TypeError, ValueError):
             raise HTTPException(status_code=400, detail=f"{name} must be a number")
+        if val != val or val in (float("inf"), float("-inf")):
+            raise HTTPException(status_code=400, detail=f"{name} must be a number")
         if integer and val != int(val):
             raise HTTPException(status_code=400, detail=f"{name} must be an integer")
-        if not (lo <= val <= hi):
+        if val < lo:
             raise HTTPException(status_code=400,
-                                detail=f"{name} must be between {lo:g} and {hi:g}")
+                                detail=f"{name} must be at least {lo:g}")
         return int(val) if integer else val
 
-    n_clips = _gen_control(target_clips, "target_clips", 1, 15, integer=True)
-    min_secs = _gen_control(clip_min_seconds, "clip_min_seconds", 5, 175)
-    max_secs = _gen_control(clip_max_seconds, "clip_max_seconds", 10, 180)
+    n_clips = _gen_control(target_clips, "target_clips", 1, integer=True)
+    min_secs = _gen_control(clip_min_seconds, "clip_min_seconds", 5)
+    max_secs = _gen_control(clip_max_seconds, "clip_max_seconds", 10)
     if min_secs is not None and max_secs is not None and max_secs < min_secs + 5:
         raise HTTPException(status_code=400,
                             detail="clip_max_seconds must be at least 5s above clip_min_seconds")
@@ -3336,7 +3354,7 @@ async def process_endpoint(
         with open(input_path, "wb") as buffer:
             while content := await file.read(1024 * 1024): # Read 1MB chunks
                 size += len(content)
-                if size > limit_bytes:
+                if limit_bytes and size > limit_bytes:
                     os.remove(input_path)
                     shutil.rmtree(job_output_dir)
                     raise HTTPException(status_code=413, detail=f"File too large. Max size {MAX_FILE_SIZE_MB}MB")
@@ -4257,10 +4275,11 @@ async def get_clip_edl(job_id: str, clip_index: int, request: Request):
             "duration": source_duration,
             "duration_estimated": duration_estimated,
         },
+        # None = no cap (the dashboard reads it as unlimited).
         "limits": {
-            "max_segments": recut.MAX_SEGMENTS,
+            "max_segments": recut.MAX_SEGMENTS or None,
             "min_segment_seconds": recut.MIN_SEGMENT_SECONDS,
-            "max_total_seconds": recut.MAX_TOTAL_SECONDS,
+            "max_total_seconds": recut.MAX_TOTAL_SECONDS or None,
         },
         "rerender_minutes": (max(1, math.ceil(total / 60.0))
                              if BILLING_ENABLED else 0),
@@ -6010,7 +6029,7 @@ async def thumbnail_upload(
         with open(video_path, "wb") as buffer:
             while chunk := await file.read(1024 * 1024):
                 size += len(chunk)
-                if size > limit_bytes:
+                if limit_bytes and size > limit_bytes:
                     os.remove(video_path)
                     raise HTTPException(status_code=413, detail=f"File too large. Max size {MAX_FILE_SIZE_MB}MB")
                 buffer.write(chunk)
@@ -6135,7 +6154,7 @@ async def thumbnail_analyze(
             with open(video_path, "wb") as buffer:
                 while chunk := await file.read(1024 * 1024):
                     size += len(chunk)
-                    if size > limit_bytes:
+                    if limit_bytes and size > limit_bytes:
                         os.remove(video_path)
                         raise HTTPException(status_code=413, detail=f"File too large. Max size {MAX_FILE_SIZE_MB}MB")
                     buffer.write(chunk)

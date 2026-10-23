@@ -1,30 +1,17 @@
 # OpenShorts HTTP reference
 
-Base URL: `https://api.openshorts.app` (self-hosted: `http://localhost:8000`).
-Every call carries `Authorization: Bearer osk_...` or `X-API-Key: osk_...`.
-Self-hosted instances need no key, but do need a Gemini key, either in the
-server's environment or as an `X-Gemini-Key` header.
+Base URL: `http://localhost:8000` (your own server). No API key; the server
+does need a Gemini key, either in its environment or as an `X-Gemini-Key`
+header.
 
-The MCP server at `https://mcp.openshorts.app/mcp` wraps exactly these
-endpoints, forwarding your auth headers, so the two paths cannot drift.
+The MCP server at `http://localhost:8000/mcp` wraps exactly these endpoints,
+forwarding your headers, so the two paths cannot drift.
 
 ## Quota
 
-`GET /api/me`
-
-```json
-{
-  "plan": "free",
-  "entitled": false,
-  "minutes": { "plan_allowance": 20, "plan_used": 4, "plan_remaining": 16,
-               "topup_remaining": 0, "remaining": 16 },
-  "upload_post_profile": null
-}
-```
-
-`upload_post_profile` is null when no social account is connected, which means
-publishing will fail. On a self-hosted instance this endpoint is not mounted at
-all and returns 404, which simply means there is no quota to report.
+There is none. `GET /api/me` (an endpoint of upstream's hosted service) is not
+mounted and returns 404; the MCP `get_quota` tool turns that into
+`{"self_host_or_anonymous": true}`.
 
 ## Start a job
 
@@ -49,9 +36,9 @@ a `file` part to upload a local video instead):
 `acknowledged: true` is the rights attestation and is required. `layouts`
 accepts a JSON list or a comma separated string of `auto`, `split`,
 `screencast`, `speaker_cut`, `punch_in`. `output_format` is one of `auto`,
-`vertical`, `horizontal`, `square`. `target_clips` is 1 to 15;
-`clip_min_seconds` 5 to 175; `clip_max_seconds` 10 to 180 and at least 5 above
-the minimum.
+`vertical`, `horizontal`, `square`. `target_clips` is 1 or more;
+`clip_min_seconds` 5 or more; `clip_max_seconds` 10 or more and at least 5
+above the minimum. There is no upper cap.
 
 Success:
 
@@ -68,9 +55,8 @@ Quality gate, also HTTP 200:
 
 Ask the user, then resubmit the identical body with `force_low_quality: true`.
 
-Errors: **402** `{"detail": {"error": "quota_exceeded", "minutes_required": 12,
-"minutes_remaining": 3}}`, **429** too many jobs already running, **400** the
-source duration could not be determined.
+Errors: **400** for a bad field (e.g. `target_clips` below 1) or a source
+that could not be read. Nothing is refused for minutes, size or length.
 
 ## Poll a job
 
@@ -162,4 +148,4 @@ Analytics of what was published: `GET /api/social/analytics` (profile totals),
 `GET /api/social/analytics/posts` (per post), and
 `GET /api/social/analytics/impressions` (windowed, e.g. `?period=last_week`).
 
-Full generated API docs: <https://api.openshorts.app/docs>.
+Full generated API docs: `http://localhost:8000/docs` on your server.

@@ -8,11 +8,10 @@ const SUPPORTED_PLATFORMS = [
     'Facebook', 'Instagram', 'Dailymotion', 'Reddit', 'Streamable',
 ];
 
-// Mirrors the server's MIN_SOURCE_SECONDS: shorter sources are rejected with a
-// 400 after the whole file was uploaded. Checking the duration in the browser
-// says so the moment the file is picked (a 27 s upload used to end in a bare
-// "That run failed").
-const MIN_SOURCE_SECONDS = 45;
+// The server's MIN_SOURCE_SECONDS / MAX_FILE_SIZE_MB, read from /api/config.
+// Both are off by default here (0 / null); when an admin sets the minimum,
+// checking the duration in the browser says so the moment the file is picked
+// instead of after the whole upload.
 
 // Duration of a local video file in seconds, or null when the browser cannot
 // read it (unsupported codec): then the server stays the judge.
@@ -36,7 +35,9 @@ export default function MediaInput({ onProcess, isProcessing }) {
     const [url, setUrl] = useState('');
     const [file, setFile] = useState(null);
     const [fileSeconds, setFileSeconds] = useState(null);
-    const fileTooShort = fileSeconds != null && fileSeconds < MIN_SOURCE_SECONDS;
+    const [minSourceSeconds, setMinSourceSeconds] = useState(0);
+    const [maxFileSizeMb, setMaxFileSizeMb] = useState(null);
+    const fileTooShort = minSourceSeconds > 0 && fileSeconds != null && fileSeconds < minSourceSeconds;
     const [acknowledged, setAcknowledged] = useState(false);
     const [outputFormat, setOutputFormat] = useState('vertical'); // vertical | horizontal | square
     const [showInfo, setShowInfo] = useState(false);
@@ -80,12 +81,12 @@ export default function MediaInput({ onProcess, isProcessing }) {
         readVideoDuration(file).then((d) => {
             if (cancelled) return;
             setFileSeconds(d);
-            if (d != null && d < MIN_SOURCE_SECONDS) {
+            if (minSourceSeconds > 0 && d != null && d < minSourceSeconds) {
                 track('SourceTooShort', { props: { seconds: String(Math.round(d)) } });
             }
         });
         return () => { cancelled = true; };
-    }, [file]);
+    }, [file, minSourceSeconds]);
 
     useEffect(() => {
         fetch(getApiUrl('/api/config'))
@@ -94,6 +95,10 @@ export default function MediaInput({ onProcess, isProcessing }) {
                 if (cfg && cfg.youtubeUrlEnabled === false) {
                     setYoutubeUrlEnabled(false);
                     setMode('file');
+                }
+                if (cfg) {
+                    setMinSourceSeconds(Number(cfg.minSourceSeconds) || 0);
+                    setMaxFileSizeMb(Number(cfg.maxFileSizeMb) || null);
                 }
             })
             .catch(() => {});
@@ -234,7 +239,7 @@ export default function MediaInput({ onProcess, isProcessing }) {
                         ) : null}
                         {file && fileTooShort ? (
                             <p className="text-danger text-sm mt-3" role="alert">
-                                This video is {Math.round(fileSeconds)}s long. Clip generation needs at least {MIN_SOURCE_SECONDS}s
+                                This video is {Math.round(fileSeconds)}s long. Clip generation needs at least {minSourceSeconds}s
                                 of footage to cut from: it already is a short. Pick a longer video.
                             </p>
                         ) : null}
@@ -248,7 +253,10 @@ export default function MediaInput({ onProcess, isProcessing }) {
                                 />
                                 <Upload className="mx-auto mb-3 text-muted" size={18} />
                                 <p className="text-ink2 lowercase">Click to upload or drag and drop</p>
-                                <p className="readout mt-2">MP4, MOV up to 500MB · at least {MIN_SOURCE_SECONDS}s long</p>
+                                <p className="readout mt-2">
+                                    MP4, MOV · {maxFileSizeMb ? `up to ${maxFileSizeMb}MB` : 'any size'}
+                                    {' · '}{minSourceSeconds > 0 ? `at least ${minSourceSeconds}s long` : 'any length'}
+                                </p>
                             </label>
                         )}
                     </div>
@@ -310,7 +318,7 @@ export default function MediaInput({ onProcess, isProcessing }) {
                             <div>
                                 <p className="eyebrow mb-1.5">clips to aim for</p>
                                 <input
-                                    type="number" min="1" max="15" step="1"
+                                    type="number" min="1" step="1"
                                     value={targetClips}
                                     onChange={(e) => setTargetClips(e.target.value)}
                                     placeholder="auto"
@@ -320,7 +328,7 @@ export default function MediaInput({ onProcess, isProcessing }) {
                             <div>
                                 <p className="eyebrow mb-1.5">min length (s)</p>
                                 <input
-                                    type="number" min="5" max="175" step="1"
+                                    type="number" min="5" step="1"
                                     value={clipMinSeconds}
                                     onChange={(e) => setClipMinSeconds(e.target.value)}
                                     placeholder="15"
@@ -330,7 +338,7 @@ export default function MediaInput({ onProcess, isProcessing }) {
                             <div>
                                 <p className="eyebrow mb-1.5">max length (s)</p>
                                 <input
-                                    type="number" min="10" max="180" step="1"
+                                    type="number" min="10" step="1"
                                     value={clipMaxSeconds}
                                     onChange={(e) => setClipMaxSeconds(e.target.value)}
                                     placeholder="60"

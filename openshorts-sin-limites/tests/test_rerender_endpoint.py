@@ -117,7 +117,9 @@ class TestGetEdl:
         # The editor gets the whole source transcript, not a window around
         # the clip: a cut can only be extended into words it was sent.
         assert [w["w"] for w in data["words"]] == ["hello", "world", "again"]
-        assert data["limits"]["max_segments"] == recut.MAX_SEGMENTS
+        # No caps by default: reported as null, which the editor reads as unlimited.
+        assert data["limits"]["max_segments"] is None
+        assert data["limits"]["max_total_seconds"] is None
         # Self-host meters nothing.
         assert data["rerender_minutes"] == 0
 

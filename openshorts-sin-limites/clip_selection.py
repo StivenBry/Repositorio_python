@@ -73,12 +73,23 @@ def shortlist_target(video_duration):
     Scales with duration so a long video surfaces more candidates without
     exploding the detail call, floored at 3 so a short one still gets a
     choice. ``score_batches`` exists to make this number reachable.
+
+    An explicit clip count (``CLIP_TARGET_MAX``, set by /api/process from
+    ``target_clips``) raises it to at least that many windows; otherwise the
+    cap of 10 would make any larger request unreachable.
     """
+    import os
+
     try:
         seconds = float(video_duration or 0)
     except (TypeError, ValueError):
         seconds = 0.0
-    return max(3, min(10, int(seconds // 90) + 2))
+    base = max(3, min(10, int(seconds // 90) + 2))
+    try:
+        asked = int(os.environ.get("CLIP_TARGET_MAX") or 0)
+    except ValueError:
+        asked = 0
+    return max(base, asked)
 
 
 def score_batches(windows, batch_size):
@@ -168,23 +179,26 @@ def clip_duration_bounds():
     """The clip length band (seconds) the selection prompts and word-snapping
     enforce. ``CLIP_MIN_SECONDS`` / ``CLIP_MAX_SECONDS`` override the classic
     15-60 — set per job by /api/process when the user asks for a specific
-    length, or by hand for A/B runs. Values are clamped to platform-sane
-    limits and re-ordered so bad input degrades instead of breaking the job.
+    length, or by hand for A/B runs. Values get a floor (5s / 10s) and are
+    re-ordered so bad input degrades instead of breaking the job. There is no
+    ceiling: upstream clamped the band to 180s.
     """
+    import math
     import os
 
     def _read(name, default):
         try:
-            return float(os.environ.get(name, ""))
+            val = float(os.environ.get(name, ""))
         except ValueError:
             return default
+        return val if math.isfinite(val) else default
 
     lo = _read("CLIP_MIN_SECONDS", 15.0)
     hi = _read("CLIP_MAX_SECONDS", 60.0)
-    lo = min(max(lo, 5.0), 175.0)
-    hi = min(max(hi, 10.0), 180.0)
+    lo = max(lo, 5.0)
+    hi = max(hi, 10.0)
     if hi < lo + 5.0:  # keep a real band: degenerate ranges starve the model
-        hi = min(180.0, lo + 5.0)
+        hi = lo + 5.0
     return round(lo, 3), round(hi, 3)
 
 
