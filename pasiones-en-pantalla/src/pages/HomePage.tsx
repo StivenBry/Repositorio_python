@@ -1,6 +1,7 @@
 import { CloudOff, Film } from 'lucide-react'
 import { useMemo } from 'react'
 import { Link } from 'react-router-dom'
+import { AdSlot } from '../components/AdSlot'
 import { HeroCarousel, HeroSkeleton } from '../components/HeroCarousel'
 import { EmptyState } from '../components/States'
 import { LandscapeCard, PosterCard } from '../components/VideoCard'
@@ -102,6 +103,7 @@ export default function HomePage() {
             <PosterCard key={v.id} video={v} inRow />
           ))}
         </VideoRow>
+        <AdSlot className="gutter" />
         {myList.length > 0 && (
           <VideoRow title="Mi lista" seeAllHref="/mi-lista">
             {myList.map((v) => (

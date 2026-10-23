@@ -12,6 +12,7 @@ const WatchPage = lazy(() => import('./pages/WatchPage'))
 const SearchPage = lazy(() => import('./pages/SearchPage'))
 const CategoryPage = lazy(() => import('./pages/CategoryPage'))
 const MyListPage = lazy(() => import('./pages/MyListPage'))
+const PrivacyPage = lazy(() => import('./pages/PrivacyPage'))
 const AdminLoginPage = lazy(() => import('./pages/admin/AdminLoginPage'))
 const AdminLayout = lazy(() => import('./pages/admin/AdminLayout'))
 const AdminDashboardPage = lazy(() => import('./pages/admin/AdminDashboardPage'))
@@ -56,6 +57,7 @@ export default function App() {
         <Route path="buscar" element={<SearchPage />} />
         <Route path="categoria/:slug" element={<CategoryPage />} />
         <Route path="mi-lista" element={<MyListPage />} />
+        <Route path="privacidad" element={<PrivacyPage />} />
         <Route path="*" element={<NotFoundPage />} />
       </Route>
       <Route element={<PageTransition fade />}>

@@ -1,6 +1,7 @@
 import { Check, ChevronDown, Film, Play, Plus, RotateCcw, Share2 } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { Link, useParams } from 'react-router-dom'
+import { AdSlot } from '../components/AdSlot'
 import { Artwork } from '../components/Artwork'
 import { Dot, ExclusiveChip, RatingBadge, Top10Badge } from '../components/Badges'
 import { EmptyState, FullPageSpinner } from '../components/States'
@@ -243,6 +244,7 @@ function Detail({ video, catalog }: { video: Video; catalog: Video[] }) {
           )}
         </div>
       </section>
+      <AdSlot className="gutter mt-14" />
     </article>
   )
 }

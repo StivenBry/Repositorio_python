@@ -1,6 +1,7 @@
 import { Search, SearchX, X } from 'lucide-react'
 import { useDeferredValue, useEffect, useMemo, useRef, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
+import { AdSlot } from '../components/AdSlot'
 import { EmptyState } from '../components/States'
 import { GridSkeleton, VideoGrid } from '../components/VideoGrid'
 import { useCatalog } from '../context/CatalogContext'
@@ -113,6 +114,7 @@ export default function SearchPage() {
               {deferredQuery.trim() ? `${results.length} resultado${results.length === 1 ? '' : 's'} para “${deferredQuery.trim()}”` : `${results.length} títulos`}
             </p>
             <VideoGrid videos={results} />
+            <AdSlot className="mt-12" />
           </>
         ) : (
           <EmptyState icon={SearchX} title="Sin resultados">

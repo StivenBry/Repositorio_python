@@ -15,5 +15,11 @@ export const isSupabaseConfigured = !looksLikePlaceholder(SUPABASE_URL) && !look
 
 export const SITE_NAME = 'Pasiones en Pantalla'
 
+// Google AdSense (opcional). Sin un ID válido no se carga nada relacionado con anuncios.
+const rawAdsClient = env.VITE_ADSENSE_CLIENT?.trim() ?? ''
+const rawAdsSlot = env.VITE_ADSENSE_SLOT?.trim() ?? ''
+export const ADSENSE_CLIENT = /^ca-pub-\d{16}$/.test(rawAdsClient) ? rawAdsClient : ''
+export const ADSENSE_SLOT = /^\d{6,}$/.test(rawAdsSlot) ? rawAdsSlot : ''
+
 /** Ruta pública de un archivo de /public respetando el `base` de Vite. */
 export const asset = (path: string) => `${import.meta.env.BASE_URL}${path.replace(/^\//, '')}`

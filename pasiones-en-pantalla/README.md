@@ -137,6 +137,31 @@ IndexedDB de tu navegador; el botón **Restaurar demo** del panel vuelve al cat�
 
 ---
 
+## 💰 Publicidad con Google AdSense
+
+La integración ya está en el código y se activa con dos variables. Mientras no existan, el sitio no carga nada de Google.
+
+1. **Requisitos de Google**
+   - Un **dominio propio** (p. ej. `pasionesenpantalla.com`). AdSense solo acepta sitios de nivel de dominio y exige
+     `ads.txt` en la raíz, así que no sirve una subcarpeta de `github.io`. En GitHub: *Settings → Pages → Custom domain*.
+   - **Contenido propio o con derechos de emisión.** Publicar novelas o series de terceros sin licencia hace que Google
+     rechace o cierre la cuenta.
+   - Política de privacidad: ya incluida en `/privacidad`, enlazada en el pie de página.
+2. Crea la cuenta en [adsense.google.com](https://adsense.google.com) con tu dominio y copia tu **ID de editor** (`ca-pub-…`).
+3. En **Anuncios → Por bloque de anuncios**, crea un bloque **Display adaptable** y copia su `data-ad-slot`.
+4. Agrega en `.env.production` (o en las variables de Vercel/Netlify):
+   ```
+   VITE_ADSENSE_CLIENT=ca-pub-XXXXXXXXXXXXXXXX
+   VITE_ADSENSE_SLOT=XXXXXXXXXX
+   ```
+5. Publica. El build añade el script de AdSense, la meta `google-adsense-account` (verificación del sitio) y `ads.txt`.
+6. En AdSense: verifica el sitio y, en **Privacidad y mensajes**, activa el mensaje de consentimiento para visitantes de
+   Europa/Reino Unido (Google lo exige y lo muestra él mismo).
+
+Los anuncios aparecen en el inicio (entre filas), en la ficha de cada video, en la búsqueda y en las categorías. **Nunca**
+en el reproductor ni en el panel. Si Google no llena un espacio, el bloque se oculta solo. Si activas *Auto ads* en AdSense,
+desactiva los anuncios "anclados" para que no tapen los controles del reproductor.
+
 ## 🎥 Sobre el almacenamiento de videos
 
 - El plan gratuito de Supabase permite archivos de hasta **50 MB**. En planes de pago puedes subirlo
@@ -170,7 +195,7 @@ pasiones-en-pantalla/
 │   ├── schema.sql            # Tablas, RLS, bucket "media" y políticas de Storage
 │   └── seed.sql              # Datos de ejemplo (opcional)
 ├── src/
-│   ├── components/           # Header, HeroCarousel, VideoRow, VideoCard, VideoPlayer…
+│   ├── components/           # Header, HeroCarousel, VideoRow, VideoCard, VideoPlayer, AdSlot…
 │   ├── context/              # Auth, catálogo y notificaciones
 │   ├── data/demoCatalog.ts   # Catálogo de ejemplo
 │   ├── lib/                  # Configuración, formato, detección de enlaces, Mi lista/progreso
