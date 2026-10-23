@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Página no encontrada</title>
+    <script>
+      // GitHub Pages no conoce las rutas internas de "Pasiones en Pantalla" (p. ej. /pasiones/video/123):
+      // las envía a la app, que restaura la ruta original (ver pasiones-en-pantalla/src/main.tsx).
+      (function () {
+        var base = '/Repositorio_python/pasiones/'
+        var l = window.location
+        if (l.pathname.indexOf(base) === 0 && l.pathname !== base) {
+          l.replace(base + '?__ruta=' + encodeURIComponent(l.pathname.slice(base.length) + l.search) + l.hash)
+        }
+      })()
+    </script>
+    <style>
+      body { margin: 0; min-height: 100vh; display: grid; place-items: center; background: #0b0e1c; color: #fff; font-family: system-ui, sans-serif; text-align: center }
+      a { color: #f26a21 }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Página no encontrada</h1>
+      <p><a href="/Repositorio_python/pasiones/">Ir a Pasiones en Pantalla</a></p>
+    </main>
+  </body>
+</html>

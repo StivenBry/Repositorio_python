@@ -1,0 +1,49 @@
+# Recompila "Pasiones en Pantalla" y la publica en GitHub Pages (carpeta /pasiones de main)
+# cada vez que cambia el código de pasiones-en-pantalla/.
+name: Publicar Pasiones en Pantalla
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'pasiones-en-pantalla/**'
+      - '.github/workflows/pasiones-pages.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: pasiones-pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: pasiones-en-pantalla
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: pasiones-en-pantalla/package-lock.json
+
+      - run: npm ci
+      - run: npm run build:pages
+
+      - name: Guardar el sitio compilado en /pasiones
+        working-directory: .
+        run: |
+          if [ -z "$(git status --porcelain pasiones)" ]; then
+            echo "El sitio publicado ya está al día."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898099+github-actions[bot]@users.noreply.github.com"
+          git add pasiones
+          git commit -m "Publicar Pasiones en Pantalla en GitHub Pages"
+          git push

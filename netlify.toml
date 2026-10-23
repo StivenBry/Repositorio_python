@@ -1,0 +1,24 @@
+# Despliegue en Netlify (también funciona con el botón "Deploy to Netlify" del README).
+[build]
+  base = "pasiones-en-pantalla"
+  command = "npm run build"
+  publish = "dist"
+
+[build.environment]
+  NODE_VERSION = "22"
+
+# Rutas de la SPA (/video/..., /admin, etc.)
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+# Variables que el botón de despliegue pide al crear el sitio.
+[template.environment]
+  VITE_SUPABASE_URL = "URL de tu proyecto Supabase (Project Settings → API → Project URL)"
+  VITE_SUPABASE_ANON_KEY = "Clave pública anon/publishable de Supabase (Project Settings → API Keys)"

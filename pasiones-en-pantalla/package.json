@@ -1,0 +1,35 @@
+{
+  "name": "pasiones-en-pantalla",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Plataforma de streaming de novelas y series con panel de administración (React + Supabase).",
+  "engines": {
+    "node": ">=20.19"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit",
+    "build:pages": "tsc --noEmit && vite build --base=/Repositorio_python/pasiones/ --outDir ../pasiones --emptyOutDir"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.118.0",
+    "hls.js": "^1.7.3",
+    "lucide-react": "^1.61.0",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "react-router-dom": "^7.18.4"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.3.3",
+    "@types/node": "^22.20.5",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-react": "^6.1.2",
+    "tailwindcss": "^4.3.3",
+    "typescript": "~5.9.3",
+    "vite": "^8.3.5"
+  }
+}
