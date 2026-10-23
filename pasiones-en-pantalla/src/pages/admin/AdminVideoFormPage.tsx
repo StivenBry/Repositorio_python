@@ -12,6 +12,7 @@ import { usePageTitle } from '../../lib/usePageTitle'
 import { backend, isDemo } from '../../services'
 import type { UploadFolder, Video, VideoInput } from '../../types'
 import { emptyMedia, hasMedia, MediaField, mediaFrom, useMediaPreview, type MediaState } from './components/MediaField'
+import { draftFrom, draftHasCoverUpload, PlaylistFields, savePlaylistDraft, validateDraft, type PlaylistDraft } from './components/PlaylistFields'
 import { TagInput } from './components/TagInput'
 import { Toggle } from './components/Toggle'
 
@@ -36,7 +37,7 @@ interface FormState {
   backdrop: MediaState
   /** '' = sin lista · id de una lista · NEW_PLAYLIST = crear una nueva al guardar. */
   playlist: string
-  newPlaylistTitle: string
+  newPlaylist: PlaylistDraft
   playlistPosition: string
 }
 
@@ -68,7 +69,7 @@ function initialState(video?: Video): FormState {
     thumbnail: video ? mediaFrom(video.thumbnail_url, video.thumbnail_path) : emptyMedia(),
     backdrop: video ? mediaFrom(video.backdrop_url, video.backdrop_path) : emptyMedia(),
     playlist: video?.playlist_id ?? '',
-    newPlaylistTitle: '',
+    newPlaylist: draftFrom(),
     playlistPosition: video?.playlist_position ? String(video.playlist_position) : '',
   }
 }
@@ -201,7 +202,7 @@ function VideoForm({ original }: { original?: Video }) {
     if (form.thumbnail.mode === 'url' && form.thumbnail.link.trim() && !isValidVideoUrl(form.thumbnail.link)) e.thumbnail = 'Enlace de imagen no válido.'
     if (form.backdrop.mode === 'url' && form.backdrop.link.trim() && !isValidVideoUrl(form.backdrop.link)) e.backdrop = 'Enlace de imagen no válido.'
     if (parseDuration(form.duration) === 'invalid') e.duration = 'Usa minutos (90) o h:mm:ss (1:30:00).'
-    if (form.playlist === NEW_PLAYLIST && !form.newPlaylistTitle.trim()) e.playlist = 'Escribe el nombre de la nueva lista.'
+    if (form.playlist === NEW_PLAYLIST && validateDraft(form.newPlaylist)) e.playlist = validateDraft(form.newPlaylist) ?? undefined
     else if (form.playlist && form.playlistPosition && !/^[1-9]\d{0,3}$/.test(form.playlistPosition.trim()))
       e.playlist = 'El número en la lista debe ser un entero desde 1.'
     return e
@@ -223,8 +224,16 @@ function VideoForm({ original }: { original?: Video }) {
       ['thumbnails', form.thumbnail],
       ['backdrops', form.backdrop],
     ]
-    const labels: Record<UploadFolder, string> = { videos: 'Subiendo video', thumbnails: 'Subiendo miniatura', backdrops: 'Subiendo portada' }
+    const labels: Record<UploadFolder, string> = {
+      videos: 'Subiendo video',
+      thumbnails: 'Subiendo miniatura',
+      backdrops: 'Subiendo portada',
+      playlists: 'Subiendo portada de la lista',
+    }
     for (const [folder, m] of uploads) if (m.mode === 'upload' && m.file) plan.push({ key: folder, label: labels[folder], progress: 0, done: false })
+    if (form.playlist === NEW_PLAYLIST && draftHasCoverUpload(form.newPlaylist)) {
+      plan.push({ key: 'playlists', label: labels.playlists, progress: 0, done: false })
+    }
     plan.push({ key: 'save', label: original ? 'Guardando cambios' : 'Publicando video', progress: 0, done: false })
     setSteps(plan)
     setSaving(true)
@@ -237,10 +246,11 @@ function VideoForm({ original }: { original?: Video }) {
     const resolvePlaylist = async (): Promise<string | null> => {
       if (!form.playlist) return null
       if (form.playlist !== NEW_PLAYLIST) return form.playlist
-      const title = form.newPlaylistTitle.trim()
+      const title = form.newPlaylist.title.trim()
       const existing = playlists.find((p) => p.title.trim().toLowerCase() === title.toLowerCase())
       if (existing) return existing.id
-      const created = await backend.createPlaylist({ title, description: '' })
+      const created = await savePlaylistDraft(form.newPlaylist, undefined, (p) => update('playlists', { progress: p }))
+      update('playlists', { progress: 100, done: true })
       createdPlaylistId = created.id
       return created.id
     }
@@ -483,15 +493,18 @@ function VideoForm({ original }: { original?: Video }) {
                   )}
                 </div>
                 {form.playlist === NEW_PLAYLIST && (
-                  <input
-                    value={form.newPlaylistTitle}
-                    onChange={(e) => set('newPlaylistTitle', e.target.value)}
-                    maxLength={120}
-                    className={`field mt-3 ${errors.playlist ? 'border-red-400/60' : ''}`}
-                    placeholder="Nombre de la nueva lista, p. ej. Tierra de Pasión · Temporada 1"
-                    aria-label="Nombre de la nueva lista"
-                    autoFocus
-                  />
+                  <div className="mt-3 space-y-4 rounded-xl border border-line bg-ink-2/50 p-4">
+                    <input
+                      value={form.newPlaylist.title}
+                      onChange={(e) => set('newPlaylist', { ...form.newPlaylist, title: e.target.value })}
+                      maxLength={120}
+                      className={`field ${errors.playlist ? 'border-red-400/60' : ''}`}
+                      placeholder="Nombre de la nueva lista, p. ej. Tierra de Pasión · Temporada 1"
+                      aria-label="Nombre de la nueva lista"
+                      autoFocus
+                    />
+                    <PlaylistFields idPrefix="inline-playlist" hideTitle value={form.newPlaylist} onChange={(d) => set('newPlaylist', d)} />
+                  </div>
                 )}
                 {errors.playlist ? (
                   <p className="mt-1.5 text-xs text-red-300">{errors.playlist}</p>

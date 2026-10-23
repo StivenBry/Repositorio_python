@@ -36,13 +36,17 @@ export interface Playlist {
   id: string
   title: string
   description: string
+  /** Portada horizontal 16:9 de la lista. */
+  cover_url: string | null
+  /** Ruta en el bucket si la portada se subió a Storage. */
+  cover_path: string | null
   created_at: string
   updated_at: string
 }
 
-export type PlaylistInput = Pick<Playlist, 'title' | 'description'>
+export type PlaylistInput = Pick<Playlist, 'title' | 'description' | 'cover_url' | 'cover_path'>
 
-export type UploadFolder = 'videos' | 'thumbnails' | 'backdrops'
+export type UploadFolder = 'videos' | 'thumbnails' | 'backdrops' | 'playlists'
 
 export interface UploadResult {
   url: string

@@ -1,10 +1,9 @@
 import { CloudOff, Film } from 'lucide-react'
 import { useMemo } from 'react'
-import { Link } from 'react-router-dom'
 import { AdSlot } from '../components/AdSlot'
 import { HeroCarousel, HeroSkeleton } from '../components/HeroCarousel'
 import { EmptyState } from '../components/States'
-import { LandscapeCard, PosterCard } from '../components/VideoCard'
+import { LandscapeCard, PlaylistTile, PosterCard } from '../components/VideoCard'
 import { VideoRow } from '../components/VideoRow'
 import { useCatalog } from '../context/CatalogContext'
 import { formatClock, formatDuration } from '../lib/format'
@@ -31,6 +30,7 @@ export default function HomePage() {
     [videos, progress],
   )
 
+  const nonEmptyPlaylists = playlists.filter((p) => playlistItems(p.id).length > 0)
   const top10 = useMemo(() => videos.filter((v) => v.is_top10).slice(0, 10), [videos])
   const myList = useMemo(() => myListIds.map((id) => videos.find((v) => v.id === id)).filter((v) => v !== undefined), [myListIds, videos])
 
@@ -63,11 +63,8 @@ export default function HomePage() {
   if (!videos.length) {
     return (
       <div className="gutter pt-32">
-        <EmptyState icon={Film} title="Aún no hay videos publicados">
-          <p>Entra al panel de administración para subir el primer video.</p>
-          <Link to="/admin" className="btn-primary mt-6">
-            Ir al panel
-          </Link>
+        <EmptyState icon={Film} title="Muy pronto, nuevas historias">
+          <p>Estamos preparando novelas, series y películas para ti. Vuelve en unos días.</p>
         </EmptyState>
       </div>
     )
@@ -104,6 +101,13 @@ export default function HomePage() {
           ))}
         </VideoRow>
         <AdSlot className="gutter" />
+        {nonEmptyPlaylists.length > 0 && (
+          <VideoRow title="Listas de reproducción">
+            {nonEmptyPlaylists.map((p) => (
+              <PlaylistTile key={p.id} playlist={p} items={playlistItems(p.id)} inRow />
+            ))}
+          </VideoRow>
+        )}
         {playlists.map((p) => {
           const items = playlistItems(p.id)
           if (!items.length) return null

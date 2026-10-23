@@ -5,6 +5,7 @@ import { Logo } from '../../components/Logo'
 import { FullPageSpinner } from '../../components/States'
 import { useAuth } from '../../context/AuthContext'
 import { useToast } from '../../context/ToastContext'
+import { useNoIndex } from '../../lib/useNoIndex'
 import { isDemo } from '../../services'
 import { ChangePasswordDialog } from './components/ChangePasswordDialog'
 
@@ -20,6 +21,7 @@ export default function AdminLayout() {
   const navigate = useNavigate()
   const toast = useToast()
   const [changingPassword, setChangingPassword] = useState(false)
+  useNoIndex()
 
   if (loading) return <FullPageSpinner />
   if (!session) return <Navigate to="/admin/login" replace state={{ from: location.pathname }} />

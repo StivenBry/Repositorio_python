@@ -1,7 +1,7 @@
-import { Play } from 'lucide-react'
+import { ListVideo, Play } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { formatDuration } from '../lib/format'
-import type { Video } from '../types'
+import type { Playlist, Video } from '../types'
 import { Artwork } from './Artwork'
 import { GemBadge, Top10Badge } from './Badges'
 
@@ -95,6 +95,36 @@ export function LandscapeCard({ video, progress, inRow = false, subtitle, to, in
       </div>
       <p className="mt-2 truncate text-sm font-semibold text-white/90 group-hover/card:text-white">{video.title}</p>
       {subtitle && <p className="truncate text-xs text-muted">{subtitle}</p>}
+    </Link>
+  )
+}
+
+/** Tarjeta de una lista de reproducción con su portada (o la del primer video). */
+export function PlaylistTile({ playlist, items, inRow = false }: { playlist: Playlist; items: Video[]; inRow?: boolean }) {
+  const cover = playlist.cover_url ?? items[0]?.backdrop_url ?? items[0]?.thumbnail_url ?? null
+  return (
+    <Link
+      to={`/lista/${playlist.id}`}
+      className={`group/card block shrink-0 snap-start outline-none ${inRow ? 'w-[78vw] sm:w-[48vw] md:w-[36vw] lg:w-[28vw] xl:w-[24vw]' : 'w-full'}`}
+      aria-label={`Lista: ${playlist.title}`}
+    >
+      <div className="relative aspect-video overflow-hidden rounded-lg bg-panel shadow-lg shadow-black/40 ring-white/80 transition duration-300 group-hover/card:ring-2 group-focus-visible/card:ring-2">
+        <Artwork
+          src={cover}
+          title={playlist.title}
+          showFallbackTitle={false}
+          className="absolute inset-0 size-full transition duration-500 group-hover/card:scale-105"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/25 to-transparent" />
+        <span className="absolute top-2 left-2 inline-flex items-center gap-1.5 rounded bg-black/70 px-2 py-0.5 text-xs font-bold backdrop-blur">
+          <ListVideo className="size-3.5 text-brand" />
+          {items.length} video{items.length === 1 ? '' : 's'}
+        </span>
+        <div className="absolute inset-x-0 bottom-0 p-3 sm:p-4">
+          <p className="line-clamp-2 text-lg leading-tight font-bold drop-shadow">{playlist.title}</p>
+          {playlist.description && <p className="mt-1 line-clamp-1 text-sm text-white/75">{playlist.description}</p>}
+        </div>
+      </div>
     </Link>
   )
 }

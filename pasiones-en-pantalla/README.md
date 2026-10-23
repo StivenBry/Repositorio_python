@@ -26,14 +26,18 @@ React + Vite + Tailwind CSS en el frontend; **Supabase** para autenticación, ba
 - Diseño responsivo (móvil, tablet, escritorio), animaciones suaves y transiciones entre páginas.
 
 **Panel de administración (`/admin`)**
+- No aparece en el sitio público (ni en el menú ni en el pie de página) y pide a los buscadores no indexarlo:
+  se entra escribiendo la dirección `/admin`.
 - Inicio de sesión con correo y contraseña; ruta protegida.
 - Estadísticas, tabla de videos con búsqueda y filtros (categoría, publicados/programados).
 - Formulario para **subir un archivo de video** (arrastrar y soltar, con barra de progreso) **o pegar un enlace**.
 - Miniatura vertical y portada horizontal: súbelas, pega un enlace o **captúralas de un fotograma del video**.
 - Título, descripción, categoría, etiquetas, clasificación, duración (detectada automáticamente), cinta, portada/Top 10/Exclusivo.
 - **Publicación programada**: con una fecha futura el video queda oculto al público hasta ese momento.
-- Asignar cada video a una **lista de reproducción** (o crear una nueva desde el mismo formulario) con su número de orden.
-- Página **Listas**: crear, renombrar, reordenar (subir/bajar), quitar videos y eliminar listas (los videos se conservan).
+- Asignar cada video a una **lista de reproducción** (o crear una nueva desde el mismo formulario, con descripción y
+  portada) con su número de orden.
+- Página **Listas**: crear y editar listas con **nombre, descripción y portada** (subida o enlace), reordenar
+  (subir/bajar), quitar videos y eliminar listas (los videos se conservan; la portada subida se borra).
 - Editar y eliminar (también borra los archivos de Storage).
 
 ---
@@ -165,6 +169,16 @@ La integración ya está en el código y se activa con dos variables. Mientras n
 Los anuncios aparecen en el inicio (entre filas), en la ficha de cada video, en la búsqueda y en las categorías. **Nunca**
 en el reproductor ni en el panel. Si Google no llena un espacio, el bloque se oculta solo. Si activas *Auto ads* en AdSense,
 desactiva los anuncios "anclados" para que no tapen los controles del reproductor.
+
+## 🌐 Dominio propio (p. ej. pasionesenpantalla.com)
+
+1. Compra el dominio en un registrador (Namecheap, Porkbun, Cloudflare, GoDaddy…).
+2. En su panel DNS crea estos registros:
+   - `A` para `@` → `185.199.108.153`, `185.199.109.153`, `185.199.110.153` y `185.199.111.153`
+   - `CNAME` para `www` → `stivenbry.github.io`
+3. En el repositorio se añade `docs/CNAME` con el dominio y se recompila el sitio con `base` `/`, para que la app quede
+   en la raíz del dominio.
+4. En GitHub → *Settings → Pages* marca **Enforce HTTPS** cuando aparezca disponible (el certificado tarda hasta 24 h).
 
 ## 🎥 Sobre el almacenamiento de videos
 

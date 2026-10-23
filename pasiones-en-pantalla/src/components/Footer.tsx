@@ -38,14 +38,9 @@ export function Footer() {
       </div>
       <div className="mt-10 flex flex-col gap-3 border-t border-line pt-6 sm:flex-row sm:items-center sm:justify-between">
         <p>© {new Date().getFullYear()} Pasiones en Pantalla. Todos los derechos reservados.</p>
-        <div className="flex gap-6">
-          <Link to="/privacidad" className="transition hover:text-white">
-            Privacidad
-          </Link>
-          <Link to="/admin" className="transition hover:text-white">
-            Acceso administrador
-          </Link>
-        </div>
+        <Link to="/privacidad" className="transition hover:text-white">
+          Privacidad
+        </Link>
       </div>
     </footer>
   )

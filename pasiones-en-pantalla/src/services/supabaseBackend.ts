@@ -134,8 +134,9 @@ export function createSupabaseBackend(client: SupabaseClient): Backend {
     },
 
     async deletePlaylist(id) {
-      const { error } = await client.from('playlists').delete().eq('id', id)
+      const { data, error } = await client.from('playlists').delete().eq('id', id).select('cover_path')
       if (error) throw friendlyError(error)
+      await removeFiles((data ?? []).map((row) => row.cover_path as string | null).filter((p): p is string => Boolean(p)))
     },
 
     async uploadFile(file, folder, onProgress) {

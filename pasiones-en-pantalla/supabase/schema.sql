@@ -114,9 +114,15 @@ create table if not exists public.playlists (
   id          uuid primary key default gen_random_uuid(),
   title       text not null check (char_length(title) between 1 and 120),
   description text not null default '',
+  cover_url   text,                       -- portada 16:9 de la lista
+  cover_path  text,                       -- ruta en el bucket si se subió a Storage
   created_at  timestamptz not null default now(),
   updated_at  timestamptz not null default now()
 );
+
+-- Proyectos creados antes de que existieran las portadas.
+alter table public.playlists add column if not exists cover_url text;
+alter table public.playlists add column if not exists cover_path text;
 
 alter table public.videos
   add column if not exists playlist_id uuid references public.playlists (id) on delete set null;

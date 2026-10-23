@@ -90,8 +90,14 @@ async function hydrate(video: Video): Promise<Video> {
 }
 
 /** Al guardar, las URLs blob: se vuelven a escribir como idb:// usando su ruta. */
+const storedUrl = (url: string | null, path: string | null) => (path && url?.startsWith('blob:') ? IDB_PREFIX + path : url)
+
+async function hydratePlaylist(playlist: Playlist): Promise<Playlist> {
+  return { ...playlist, cover_url: await resolveUrl(playlist.cover_url ?? null), cover_path: playlist.cover_path ?? null }
+}
+
 function dehydrate(input: VideoInput): VideoInput {
-  const toStored = (url: string | null, path: string | null) => (path && url?.startsWith('blob:') ? IDB_PREFIX + path : url)
+  const toStored = storedUrl
   return {
     ...input,
     video_url: toStored(input.video_url, input.video_path) ?? '',
@@ -160,28 +166,31 @@ export const demoBackend: Backend = {
   },
 
   async listPlaylists() {
-    return readPlaylists().sort((a, b) => a.created_at.localeCompare(b.created_at))
+    const sorted = readPlaylists().sort((a, b) => a.created_at.localeCompare(b.created_at))
+    return Promise.all(sorted.map(hydratePlaylist))
   },
 
   async createPlaylist(input) {
     const now = new Date().toISOString()
-    const playlist: Playlist = { ...input, id: uid(), created_at: now, updated_at: now }
+    const playlist: Playlist = { ...input, cover_url: storedUrl(input.cover_url, input.cover_path), id: uid(), created_at: now, updated_at: now }
     writePlaylists([...readPlaylists(), playlist])
-    return playlist
+    return hydratePlaylist(playlist)
   },
 
   async updatePlaylist(id, input) {
     const all = readPlaylists()
     const index = all.findIndex((p) => p.id === id)
     if (index === -1) throw new Error('La lista ya no existe.')
-    all[index] = { ...all[index], ...input, updated_at: new Date().toISOString() }
+    all[index] = { ...all[index], ...input, cover_url: storedUrl(input.cover_url, input.cover_path), updated_at: new Date().toISOString() }
     writePlaylists(all)
-    return all[index]
+    return hydratePlaylist(all[index])
   },
 
   async deletePlaylist(id) {
+    const playlist = readPlaylists().find((p) => p.id === id)
     writePlaylists(readPlaylists().filter((p) => p.id !== id))
     writeStored(readStored().map((v) => (v.playlist_id === id ? { ...v, playlist_id: null, playlist_position: null } : v)))
+    if (playlist?.cover_path) await removeFiles([playlist.cover_path])
   },
 
   async uploadFile(file, folder, onProgress) {

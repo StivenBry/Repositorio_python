@@ -14,7 +14,7 @@ export interface Backend {
   listPlaylists(): Promise<Playlist[]>
   createPlaylist(input: PlaylistInput): Promise<Playlist>
   updatePlaylist(id: string, input: PlaylistInput): Promise<Playlist>
-  /** Borra la lista; sus videos se conservan, sin lista. */
+  /** Borra la lista y su portada subida; sus videos se conservan, sin lista. */
   deletePlaylist(id: string): Promise<void>
   uploadFile(file: File, folder: UploadFolder, onProgress?: ProgressFn): Promise<UploadResult>
   removeFiles(paths: string[]): Promise<void>
