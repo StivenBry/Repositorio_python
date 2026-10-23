@@ -103,7 +103,9 @@ cp .env.example .env          # opcional
 docker compose up --build
 ```
 
-- Panel: **http://localhost:5175** → pon tus claves en **Settings**.
+- Panel: **http://localhost:5175** → pon tu clave de Gemini en **Settings**
+  (es la única obligatoria; Upload-Post solo hace falta si quieres que publique
+  en tus redes por ti, si no descargas los clips y los subes a mano).
 - API: http://localhost:8000 (documentación en http://localhost:8000/docs).
 
 ### Con GPU NVIDIA (opcional)
