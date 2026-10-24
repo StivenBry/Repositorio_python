@@ -1,6 +1,6 @@
 # GitHub Pages publica la carpeta /docs de main. Este workflow recompila
-# "Pasiones en Pantalla" en docs/pasiones, copia terapias.html a docs/ y
-# "Clips Sin Límites" (versión web) a docs/clips cada vez que cambia alguno.
+# "Pasiones en Pantalla" en docs/pasiones y copia terapias.html a docs/
+# cada vez que cambia alguno de ellos.
 name: Publicar sitio (GitHub Pages)
 
 on:
@@ -9,7 +9,6 @@ on:
     paths:
       - 'pasiones-en-pantalla/**'
       - 'terapias.html'
-      - 'clips-web/**'
       - '.github/workflows/pasiones-pages.yml'
   workflow_dispatch:
 
@@ -40,11 +39,6 @@ jobs:
 
       - name: Copiar terapias.html
         run: cp terapias.html docs/terapias.html
-
-      - name: Copiar Clips Sin Límites (versión web)
-        run: |
-          mkdir -p docs/clips
-          cp clips-web/index.html docs/clips/index.html
 
       - name: Guardar el sitio en /docs
         run: |
