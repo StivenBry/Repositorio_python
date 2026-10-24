@@ -107,6 +107,9 @@ docker compose up --build
   (es la única obligatoria; Upload-Post solo hace falta si quieres que publique
   en tus redes por ti, si no descargas los clips y los subes a mano).
 - API: http://localhost:8000 (documentación en http://localhost:8000/docs).
+- Solo se puede abrir **desde este mismo PC**: los puertos están ligados a
+  `127.0.0.1` en `docker-compose.yml`, así que otros dispositivos de tu red
+  (Wi-Fi de casa o de la universidad) no pueden entrar ni ver tus clips.
 
 ### Con GPU NVIDIA (opcional)
 
