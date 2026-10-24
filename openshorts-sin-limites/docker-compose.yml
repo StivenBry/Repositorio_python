@@ -1,5 +1,7 @@
 # Ports are bound to 127.0.0.1: only this computer can open the tool. Other
 # devices on the same network (Wi-Fi, LAN) cannot reach it.
+# restart: "no": the containers start only when you run `docker compose up`
+# (or iniciar-openshorts.cmd), never on their own when Docker starts.
 services:
   backend:
     build: .
@@ -10,7 +12,7 @@ services:
       - .:/app
       - /app/__pycache__
       - ./output:/app/output
-    restart: unless-stopped
+    restart: "no"
 
   frontend:
     build:
@@ -22,7 +24,7 @@ services:
     volumes:
       - ./dashboard:/app
       - /app/node_modules
-    restart: unless-stopped
+    restart: "no"
     depends_on:
       - backend
 
@@ -39,6 +41,6 @@ services:
       - REMOTION_BUNDLE_PATH=/app/remotion
       - OUTPUT_DIR=/output
       - PORT=3100
-    restart: unless-stopped
+    restart: "no"
     depends_on:
       - backend

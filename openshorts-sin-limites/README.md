@@ -111,6 +111,21 @@ docker compose up --build
   `127.0.0.1` en `docker-compose.yml`, así que otros dispositivos de tu red
   (Wi-Fi de casa o de la universidad) no pueden entrar ni ver tus clips.
 
+### Encender y apagar (Windows)
+
+Nada se queda trabajando en segundo plano: los contenedores no se encienden
+solos al arrancar Docker (`restart: "no"`).
+
+- **`iniciar-openshorts.cmd`** (doble clic): abre Docker Desktop si está
+  cerrado, levanta la herramienta y abre el panel en el navegador.
+- **`detener-openshorts.cmd`** (doble clic): apaga la herramienta, cierra Docker
+  Desktop y libera la memoria de WSL (`wsl --shutdown`, que también detiene
+  cualquier otra distribución de WSL que tengas abierta).
+
+Para que Docker Desktop tampoco se abra al encender el PC: Docker Desktop →
+⚙️ **Settings** → **General** → desmarca **Start Docker Desktop when you sign
+in to your computer** → **Apply**.
+
 ### Con GPU NVIDIA (opcional)
 
 Instala el controlador y el

@@ -3,3 +3,5 @@
 # whatever the checkout platform.
 bin/ffmpeg text eol=lf
 *.sh text eol=lf
+# Windows batch files need CRLF to run reliably in cmd.exe.
+*.cmd text eol=crlf
