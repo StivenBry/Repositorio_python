@@ -26,6 +26,10 @@ only: upstream's paid `cloud/` package is not here.
 - The dashboard reads caps from `/api/config` (`minSourceSeconds`,
   `maxFileSizeMb`) and the clip EDL (`limits`, `null` = no cap). Never hard-code
   a limit in the frontend.
+- The dashboard shows only the Clip Generator and Settings (the user asked for
+  clips only). AI Shorts, AI Agent, UGC Gallery and YouTube Studio tabs, the
+  fal.ai and agent cards in Settings and the landing-page links were removed
+  from `dashboard/src/App.jsx`; their backend endpoints are still there, unused.
 - Keep the diff from upstream small (no mass refactors, no deleting the inert
   billing branches) so upstream fixes can still be ported.
 

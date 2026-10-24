@@ -3,7 +3,7 @@
 | Carpeta / archivo | Descripción |
 | --- | --- |
 | [`pasiones-en-pantalla/`](pasiones-en-pantalla/) | **Pasiones en Pantalla**: plataforma de streaming (React + Supabase) con panel de administración. **En línea:** https://stivenbry.github.io/Repositorio_python/pasiones/ · Configuración y despliegue en su [README](pasiones-en-pantalla/README.md). |
-| [`openshorts-sin-limites/`](openshorts-sin-limites/) | **OpenShorts Sin Límites**: convierte vídeos largos en clips verticales para TikTok, Reels y Shorts con IA, crea vídeos UGC con actores de IA y prepara miniaturas y títulos de YouTube. Copia de [OpenShorts](https://github.com/mutonby/openshorts) (MIT) sin cuotas, sin marca de agua y sin topes de tamaño, duración o número de clips. Se ejecuta en tu equipo con Docker; ver su [README](openshorts-sin-limites/README.md). |
+| [`openshorts-sin-limites/`](openshorts-sin-limites/) | **OpenShorts Sin Límites**: convierte vídeos largos en clips verticales para TikTok, Reels y Shorts con IA (solo el generador de clips). Copia de [OpenShorts](https://github.com/mutonby/openshorts) (MIT) sin cuotas, sin marca de agua y sin topes de tamaño, duración o número de clips. Se ejecuta en tu equipo con Docker; ver su [README](openshorts-sin-limites/README.md). |
 | `docs/` | Lo que publica GitHub Pages en https://stivenbry.github.io/Repositorio_python/ (se genera automáticamente; no editar a mano). |
 | `terapias.html` | Gestión de terapias sincronizada con Google Sheets. **En línea:** https://stivenbry.github.io/Repositorio_python/terapias.html |
 | `suma.py` | Ejemplo de suma en Python. |

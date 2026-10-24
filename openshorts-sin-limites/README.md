@@ -1,46 +1,31 @@
 # OpenShorts Sin Límites
 
-Copia de [OpenShorts](https://github.com/mutonby/openshorts) (licencia MIT) para
-tu propio servidor, con las mismas funciones y **sin límites**: sin cuota de
-minutos, sin marca de agua, sin tope de tamaño ni de duración, sin máximo de
-clips y sin borrado automático de tus trabajos.
+Copia del **generador de clips** de [OpenShorts](https://github.com/mutonby/openshorts)
+(licencia MIT) para tu propio PC, **sin límites**: sin cuota de minutos, sin
+marca de agua, sin tope de tamaño ni de duración, sin máximo de clips y sin
+borrado automático de tus trabajos.
 
 Convierte vídeos largos (podcasts, directos, clases, entrevistas) en clips
-verticales 9:16 para TikTok, Instagram Reels y YouTube Shorts, crea vídeos de
-anuncio con actores de IA y prepara miniaturas, títulos y descripciones para
-YouTube.
+verticales 9:16 para TikTok, Instagram Reels y YouTube Shorts.
 
 ## Funciones
 
-Las tres herramientas del original, completas:
+El panel solo tiene el **generador de clips** (y sus ajustes). Las demás
+herramientas del original (AI Shorts, AI Agent, galería UGC y YouTube Studio)
+están quitadas del panel.
 
-1. **Generador de clips.** Transcribe el vídeo con marcas de tiempo por
-   palabra, detecta escenas y deja que la IA (Gemini, o tu propio modelo local)
-   elija los mejores momentos. Después corta, reencuadra en vertical siguiendo
-   la cara, añade subtítulos y un texto gancho.
-   - Diseños automáticos: **TRACK** (sigue a quien habla), **SPLIT** (dos
-     personas apiladas con los subtítulos en la costura), **SCREENCAST**
-     (pantalla sobre el presentador) y **GENERAL** (fondo desenfocado).
-   - Editor de clips (recortar, unir tramos, cambiar encuadre), estilos de
-     subtítulos (karaoke, Hormozi...), ganchos, efectos de vídeo generados por
-     IA y doblaje a más de 30 idiomas con ElevenLabs.
-2. **AI Shorts (vídeos UGC).** A partir de una web o una descripción: guion,
-   actor de IA (Flux), voz (ElevenLabs), vídeo con sincronía labial (Hailuo +
-   VEED o Kling), b-roll y montaje final con subtítulos.
-3. **YouTube Studio.** Miniaturas con IA (con tu cara), 10 títulos virales con
-   chat para pulirlos y descripciones con capítulos.
-
-Y además:
-
-- **Publicación y programación** en TikTok, Instagram y YouTube a la vez
-  (vía Upload-Post), con cola de programados y estadísticas.
-- **Para agentes y automatizaciones:** servidor MCP (`/mcp`, también por
-  stdio), API REST con documentación en `/docs`, webhooks firmados al terminar
-  cada trabajo, CLI (`cli/`), skill para agentes (`skills/openshorts/`) y
-  workflows de n8n (`examples/n8n/`).
-- **Galería UGC** con páginas SEO por vídeo y copia opcional en S3.
-- **Herramientas gratuitas:** transcripción de vídeos de YouTube y generador de
-  títulos/descripciones/etiquetas.
+- Transcribe el vídeo con marcas de tiempo por palabra, detecta escenas y deja
+  que la IA (Gemini, o tu propio modelo local) elija los mejores momentos.
+  Después corta, reencuadra en vertical siguiendo la cara, añade subtítulos y
+  un texto gancho, y escribe el título y la descripción para TikTok.
+- Diseños automáticos: **TRACK** (sigue a quien habla), **SPLIT** (dos
+  personas apiladas con los subtítulos en la costura), **SCREENCAST** (pantalla
+  sobre el presentador) y **GENERAL** (fondo desenfocado).
+- Editor de clips (recortar, unir tramos, cambiar encuadre), estilos de
+  subtítulos (karaoke, Hormozi...), ganchos, efectos de vídeo generados por IA
+  y, opcionalmente, doblaje a más de 30 idiomas con ElevenLabs.
+- Opcional: publicar y programar en TikTok, Instagram y YouTube vía Upload-Post.
+  Si no, descargas los clips y los subes tú.
 
 ## Límites quitados
 
@@ -62,9 +47,8 @@ Todo está explicado en [`.env.example`](.env.example).
 ### Lo que esta copia no puede quitar
 
 - **Los servicios externos son tuyos y tienen sus propios límites y precios:**
-  Gemini (capa gratuita generosa, o un modelo local sin coste), fal.ai (pago
-  por uso, ~0,65-2 $ por AI Short), ElevenLabs y Upload-Post (10 subidas
-  gratis al mes).
+  Gemini (capa gratuita generosa, o un modelo local sin coste) y, si los usas,
+  ElevenLabs y Upload-Post (10 subidas gratis al mes).
 - **Tu máquina:** en CPU, un vídeo de 8 minutos tarda 5-8 minutos (con GPU
   NVIDIA, alrededor de uno). `MAX_CONCURRENT_JOBS` (5) solo decide cuántos
   trabajos van a la vez; el resto espera en la cola.
@@ -73,8 +57,7 @@ Todo está explicado en [`.env.example`](.env.example).
   las 24 h.
 - **YouTube** puede bloquear descargas; para eso está `YOUTUBE_COOKIES`.
 
-Se mantienen algunas protecciones que no limitan el uso normal: la foto de
-actor hasta 25 MB (se carga entera en memoria), clips de al menos 5 s, aviso
+Se mantienen algunas protecciones que no limitan el uso normal: clips de al menos 5 s, aviso
 previo si un vídeo de YouTube baja de 720p (solo avisa) y caducidad de 6 h de
 los huecos de subida para agentes que nunca se usan.
 
@@ -91,8 +74,7 @@ nuevos de tu canal). Para algo parecido a Autopilot tienes el workflow
 - Docker y Docker Compose, y 8 GB de RAM o más.
 - Clave de **Google Gemini** ([gratis](https://aistudio.google.com/app/apikey)),
   salvo que uses un modelo local.
-- Opcionales según lo que uses: **fal.ai** (AI Shorts), **ElevenLabs** (voz y
-  doblaje) y **Upload-Post** (publicar en redes).
+- Opcionales: **ElevenLabs** (doblaje) y **Upload-Post** (publicar en redes).
 
 ## Puesta en marcha
 
