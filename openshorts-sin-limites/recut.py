@@ -25,7 +25,7 @@ import time
 import uuid
 
 from ffmpeg_utils import (METADATA_SCRUB, QUALITY_FAST, audio_encode_args,
-                          video_encode_args)
+                          constant_rate_args, video_encode_args)
 
 # EDL limits. 0 (the default) means no cap; upstream allowed at most 12
 # segments and 180s per edited clip. Set them in the env to bring caps back.
@@ -192,6 +192,9 @@ def cut_commands(input_path, segments, part_paths):
             "-to", str(seg["end"]),
             "-i", input_path,
             *video_encode_args(QUALITY_FAST),
+            # Constant rate, like the pipeline's own cut: the reframe that
+            # follows maps frame numbers to times (ffmpeg_utils.constant_rate).
+            *constant_rate_args(input_path),
             *audio_encode_args(),
             # Every final-artifact producer in the repo scrubs source metadata
             # and fronts the moov atom (a fast-path recut IS the delivered

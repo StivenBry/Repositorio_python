@@ -9,6 +9,7 @@ FFMPEG_ENCODER env values:
 Only the codec/quality args live here; surrounding args (-movflags, -pix_fmt,
 audio codecs, filters) stay at each call site.
 """
+import math
 import os
 import subprocess
 import threading
@@ -336,6 +337,81 @@ def _gpu_cut_ok(input_video):
     return _gpu_cut_sources[input_video]
 
 
+# --- Constant frame rate for every cut ---------------------------------------
+# The reframer works in frame numbers and turns them into times as frame / fps
+# (scene boundaries, crop paths, speaker switches). That only holds on a
+# constant-rate clip. Phone recordings, screen captures and many downloads are
+# variable-rate: there frame 300 can sit at 10s while the math puts it at 13s,
+# so framing decisions land on the wrong stretch and the picture stops matching
+# what is being said. Cuts are therefore re-timed to a constant rate: the
+# source's nominal rate (r_frame_rate) when it is a sane one, which leaves an
+# already-constant source frame for frame as it was, else the standard rate
+# nearest its average. CUT_CONSTANT_FPS=0 turns it off.
+MAX_CFR_FPS = 60.0
+_STANDARD_RATES = ("24000/1001", "24/1", "25/1", "30000/1001", "30/1",
+                   "50/1", "60000/1001", "60/1")
+_cfr_sources = {}
+
+
+def _rate(text):
+    """'30000/1001' -> 29.97; 0.0 for anything unusable ('0/0', '', None)."""
+    try:
+        num, _, den = str(text or "").partition("/")
+        value = float(num) / float(den or 1)
+    except (ValueError, ZeroDivisionError):
+        return 0.0
+    return value if math.isfinite(value) and value > 0 else 0.0
+
+
+def constant_rate(r_frame_rate, avg_frame_rate):
+    """The constant rate (an ffmpeg -r value) to cut at, or None to leave the
+    stream's timing alone: no usable rate, or a constant source above
+    MAX_CFR_FPS (120 fps slow motion keeps its frames)."""
+    nominal, average = _rate(r_frame_rate), _rate(avg_frame_rate)
+    if 0 < nominal <= MAX_CFR_FPS:
+        return str(r_frame_rate)
+    if average <= 0:
+        return None
+    if nominal and abs(nominal - average) <= nominal * 0.01:
+        return None
+    target = min(average, MAX_CFR_FPS)
+    return min(_STANDARD_RATES, key=lambda r: abs(_rate(r) - target))
+
+
+def _source_rates(path):
+    """(r_frame_rate, avg_frame_rate) of the first video stream, or None."""
+    if not os.path.exists(path):
+        return None
+    try:
+        out = subprocess.check_output(
+            ["ffprobe", "-v", "error", "-select_streams", "v:0",
+             "-show_entries", "stream=r_frame_rate,avg_frame_rate",
+             "-of", "default=nw=1", path],
+            stderr=subprocess.DEVNULL, timeout=60, text=True)
+        fields = dict(line.split("=", 1) for line in out.splitlines() if "=" in line)
+        return fields.get("r_frame_rate", ""), fields.get("avg_frame_rate", "")
+    except Exception:
+        return None
+
+
+def constant_rate_args(input_video):
+    """Output args re-timing a cut of ``input_video`` to a constant rate, or []
+    (see constant_rate). Probed once per source; a variable-rate source is
+    named in the log so a mismatch can be traced back to it."""
+    if os.environ.get("CUT_CONSTANT_FPS", "1").strip() == "0":
+        return []
+    if input_video not in _cfr_sources:
+        rates = _source_rates(input_video)
+        rate = constant_rate(*rates) if rates else None
+        if rate:
+            nominal, average = _rate(rates[0]), _rate(rates[1])
+            if average and abs(nominal - average) > max(nominal, average) * 0.001:
+                print(f"   🎚️ Variable frame rate source (nominal {rates[0]}, "
+                      f"average {rates[1]}): cuts re-timed to a constant {rate} fps.")
+        _cfr_sources[input_video] = ["-fps_mode", "cfr", "-r", rate] if rate else []
+    return list(_cfr_sources[input_video])
+
+
 def cut_clip(input_video, clip_temp_path, start, end, clip_number):
     """Cut [start, end] out of the source into ``clip_temp_path``.
 
@@ -355,12 +431,14 @@ def cut_clip(input_video, clip_temp_path, start, end, clip_number):
     session cannot allocate on a GPU that other jobs are filling.
     """
     encode_args = video_encode_args(INTERMEDIATE)
+    cfr = constant_rate_args(input_video)
     command = [
         'ffmpeg', '-y',
         '-ss', str(start),
         '-to', str(end),
         '-i', input_video,
         *encode_args,
+        *cfr,
         *audio_encode_args(),
         clip_temp_path
     ]
@@ -374,7 +452,7 @@ def cut_clip(input_video, clip_temp_path, start, end, clip_number):
             del gpu_args[i:i + 2]
         gpu_command = ['ffmpeg', '-y', '-hwaccel', 'cuda', '-hwaccel_output_format', 'cuda',
                        '-ss', str(start), '-to', str(end), '-i', input_video,
-                       *gpu_args, *audio_encode_args(), clip_temp_path]
+                       *gpu_args, *cfr, *audio_encode_args(), clip_temp_path]
 
     def _run_one(cmd):
         result = subprocess.run(cmd, stdout=subprocess.DEVNULL,

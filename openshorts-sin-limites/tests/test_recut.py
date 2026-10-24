@@ -189,6 +189,15 @@ class TestFfmpegCommands:
                                "p0.mp4"]
         assert commands[1][3] == "30" and commands[1][-1] == "p1.mp4"
 
+    def test_cut_commands_retime_a_variable_rate_source(self, monkeypatch):
+        import ffmpeg_utils
+        monkeypatch.setattr(ffmpeg_utils, "_cfr_sources", {})
+        monkeypatch.setattr(ffmpeg_utils, "_source_rates",
+                            lambda path: ("30/1", "4500/199"))
+        cmd = recut.cut_commands("in.mp4", [_seg(10, 20)], ["p0.mp4"])[0]
+        assert cmd[cmd.index("-fps_mode") + 1] == "cfr"
+        assert cmd[cmd.index("-r") + 1] == "30/1"
+
     def test_concat_command_stream_copies(self):
         cmd = recut.concat_command("list.txt", "out.mp4")
         assert "-c" in cmd and cmd[cmd.index("-c") + 1] == "copy"

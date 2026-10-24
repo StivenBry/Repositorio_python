@@ -1,4 +1,5 @@
 import os
+import shutil
 import subprocess
 
 import pytest
@@ -22,6 +23,8 @@ from ffmpeg_utils import (
 def _clean_encoder_state(monkeypatch):
     monkeypatch.delenv("FFMPEG_ENCODER", raising=False)
     monkeypatch.setattr(ffmpeg_utils, "_gpu_cut_sources", {})
+    monkeypatch.setattr(ffmpeg_utils, "_cfr_sources", {})
+    monkeypatch.delenv("CUT_CONSTANT_FPS", raising=False)
     reset_encoder_cache()
     yield
     reset_encoder_cache()
@@ -249,6 +252,70 @@ def test_failed_gpu_cut_falls_back_to_the_cpu_decode(_cut, monkeypatch):
     assert "-hwaccel" in fake.commands[0]
     assert "-hwaccel" not in fake.commands[1]
     assert len(fake.commands) == 2
+
+
+# --- constant frame rate: the reframer maps frame numbers to times ---
+
+@pytest.mark.parametrize("nominal,average,expected", [
+    ("30/1", "30/1", "30/1"),                  # constant: same rate, frames unchanged
+    ("30000/1001", "30000/1001", "30000/1001"),
+    ("30/1", "4500/199", "30/1"),              # phone VFR: its nominal rate
+    ("90000/1", "2985/100", "30000/1001"),     # nonsense nominal: nearest standard
+    ("0/0", "25/1", "25/1"),
+    ("120/1", "120/1", None),                  # constant slow motion keeps its frames
+    ("240/1", "100/1", "60/1"),                # variable above the cap: 60
+    ("0/0", "0/0", None),
+    ("", "", None),
+])
+def test_constant_rate(nominal, average, expected):
+    assert ffmpeg_utils.constant_rate(nominal, average) == expected
+
+
+def _vfr_source(monkeypatch, rates=("30/1", "4500/199")):
+    monkeypatch.setattr(ffmpeg_utils, "_source_rates", lambda path: rates)
+
+
+def test_cut_is_retimed_to_a_constant_rate(_cut, monkeypatch):
+    _vfr_source(monkeypatch)
+    cmd = _cut([(0, 5_000_000, "")]).commands[0]
+    assert cmd[cmd.index("-fps_mode") + 1] == "cfr"
+    assert cmd[cmd.index("-r") + 1] == "30/1"
+    assert cmd.index("-r") > cmd.index("-i")  # an output option
+
+
+def test_gpu_cut_is_retimed_too(_cut, monkeypatch):
+    _gpu_source(monkeypatch, "h264,yuv420p")
+    _vfr_source(monkeypatch)
+    cmd = _cut([(0, 5_000_000, "")]).commands[0]
+    assert "-hwaccel" in cmd and cmd[cmd.index("-fps_mode") + 1] == "cfr"
+
+
+def test_constant_rate_can_be_turned_off(_cut, monkeypatch):
+    _vfr_source(monkeypatch)
+    monkeypatch.setenv("CUT_CONSTANT_FPS", "0")
+    assert "-fps_mode" not in _cut([(0, 5_000_000, "")]).commands[0]
+
+
+def test_real_vfr_cut_puts_every_frame_at_frame_over_fps(tmp_path):
+    """End to end with a real ffmpeg: 2s at 30 fps then 2s at 15 fps. Before the
+    fix the cut kept that timing, so frame 60 (at 2.0s) was read as 2.6s."""
+    if not shutil.which("ffmpeg") or not shutil.which("ffprobe"):
+        pytest.skip("ffmpeg not installed")
+    src = str(tmp_path / "vfr.mp4")
+    subprocess.run(
+        ["ffmpeg", "-v", "error", "-y", "-f", "lavfi", "-i", "testsrc2=size=160x120:rate=30",
+         "-f", "lavfi", "-i", "sine=frequency=440", "-t", "4",
+         "-vf", "select='lt(t\\,2)+gte(t\\,2)*not(mod(n\\,2))'", "-fps_mode", "vfr",
+         "-c:v", "libx264", "-c:a", "aac", src], check=True)
+    out = str(tmp_path / "cut.mp4")
+    ffmpeg_utils.cut_clip(src, out, 0, 4, 1)
+    rates = ffmpeg_utils._source_rates(out)
+    assert rates == ("30/1", "30/1")
+    times = subprocess.check_output(
+        ["ffprobe", "-v", "error", "-select_streams", "v:0", "-show_entries",
+         "frame=pts_time", "-of", "csv=p=0", out], text=True).split()
+    assert abs(float(times[60]) - 60 / 30) < 0.01
+    assert abs(float(times[90]) - 90 / 30) < 0.01
 
 
 # --- INTERMEDIATE: the cut is decoded again at once, so NVENC spends bits, not effort ---
