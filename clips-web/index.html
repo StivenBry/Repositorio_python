@@ -1,0 +1,641 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<meta name="robots" content="noindex">
+<title>Clips Sin Límites · versión ligera</title>
+<style>
+  :root {
+    --bg: #0b0d12; --panel: #141821; --panel2: #1b202b; --line: #2a3140;
+    --ink: #eef1f6; --ink2: #b9c0cc; --muted: #7d8696;
+    --accent: #ff7a3d; --accent2: #ffb36b; --ok: #4ade80; --warn: #fbbf24; --danger: #f87171;
+    --radius: 14px;
+  }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  body { margin: 0; background: var(--bg); color: var(--ink);
+    font: 15px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif; }
+  main { max-width: 980px; margin: 0 auto; padding: 24px 16px 64px; }
+  h1 { font-size: 26px; margin: 0 0 4px; letter-spacing: -0.02em; }
+  h1 span { color: var(--accent); }
+  h2 { font-size: 17px; margin: 0 0 14px; }
+  .lead { color: var(--ink2); margin: 0 0 24px; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius);
+    padding: 18px; margin-bottom: 18px; }
+  .row { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; }
+  .field { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+  .field.grow { flex: 1 1 240px; }
+  label, .label { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; }
+  input[type=text], input[type=password], input[type=number], select, textarea {
+    background: var(--panel2); color: var(--ink); border: 1px solid var(--line); border-radius: 10px;
+    padding: 9px 11px; font: inherit; width: 100%; }
+  input[type=number] { width: 110px; }
+  textarea { resize: vertical; min-height: 64px; }
+  input:focus, select:focus, textarea:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .check { display: flex; gap: 8px; align-items: center; color: var(--ink2); font-size: 14px;
+    text-transform: none; letter-spacing: 0; }
+  button, .btn { background: var(--panel2); color: var(--ink); border: 1px solid var(--line);
+    border-radius: 999px; padding: 9px 16px; font: inherit; font-weight: 600; cursor: pointer;
+    text-decoration: none; display: inline-flex; align-items: center; gap: 6px; }
+  button:hover:not(:disabled), .btn:hover { border-color: var(--accent); }
+  button:disabled { opacity: 0.45; cursor: not-allowed; }
+  button.primary { background: var(--accent); border-color: var(--accent); color: #1a0d05; }
+  button.small { padding: 5px 10px; font-size: 13px; }
+  a { color: var(--accent2); }
+  .muted { color: var(--muted); font-size: 13px; }
+  .drop { display: block; border: 2px dashed var(--line); border-radius: var(--radius); padding: 28px 16px;
+    text-align: center; color: var(--ink2); cursor: pointer; font-size: 15px;
+    text-transform: none; letter-spacing: 0; }
+  .drop.over { border-color: var(--accent); background: #ff7a3d10; }
+  .drop input { display: none; }
+  .player { position: relative; background: #000; border-radius: 12px; overflow: hidden; margin-top: 14px; }
+  .player video { display: block; width: 100%; max-height: 62vh; background: #000; }
+  .cropbox { position: absolute; border: 2px solid var(--accent); pointer-events: none;
+    box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.55); display: none; }
+  .progress { height: 8px; background: var(--panel2); border-radius: 99px; overflow: hidden; margin-top: 10px; }
+  .progress > div { height: 100%; width: 0; background: linear-gradient(90deg, var(--accent), var(--accent2));
+    transition: width 0.2s; }
+  .status { margin-top: 8px; color: var(--ink2); font-size: 14px; min-height: 1.5em; }
+  .status.error { color: var(--danger); }
+  .clip { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius);
+    padding: 16px; margin-bottom: 16px; }
+  .clip.active { border-color: var(--accent); }
+  .clip header { display: flex; justify-content: space-between; gap: 12px; align-items: baseline; flex-wrap: wrap; }
+  .score { font-weight: 700; color: var(--accent2); }
+  .why { color: var(--ink2); margin: 4px 0 12px; }
+  .times { display: flex; flex-wrap: wrap; gap: 14px; align-items: flex-end; margin-bottom: 12px; }
+  .nudge { display: flex; gap: 4px; align-items: center; }
+  .grid2 { display: grid; grid-template-columns: 1fr; gap: 12px; margin: 12px 0; }
+  @media (min-width: 720px) { .grid2 { grid-template-columns: 1fr 1fr; } }
+  .copyrow { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+  .result { margin-top: 12px; display: flex; gap: 14px; align-items: flex-start; flex-wrap: wrap; }
+  .result video { width: 180px; border-radius: 10px; background: #000; }
+  .warn { color: var(--warn); }
+  footer { color: var(--muted); font-size: 13px; margin-top: 28px; }
+  details summary { cursor: pointer; font-weight: 600; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Clips <span>Sin Límites</span></h1>
+  <p class="lead">Versión ligera que funciona en el navegador. Sube un vídeo, la IA encuentra los mejores
+    momentos y te los descargas en vertical con su texto para TikTok. No hay que instalar nada.</p>
+
+  <section class="card" id="settings">
+    <h2>1. Ajustes</h2>
+    <div class="row">
+      <div class="field grow">
+        <label for="key">Clave de Gemini</label>
+        <input id="key" type="password" autocomplete="off" placeholder="AIza…">
+      </div>
+      <button id="toggleKey" class="small" type="button">Mostrar</button>
+    </div>
+    <p class="muted">Gratis en <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener">aistudio.google.com/app/apikey</a>
+      (crea la clave en un proyecto sin facturación). Solo se envía a Google.</p>
+    <label class="check"><input id="rememberKey" type="checkbox" checked> Recordar la clave en este navegador</label>
+
+    <div class="row" style="margin-top:16px">
+      <div class="field"><label for="nClips">Clips</label><input id="nClips" type="number" min="1" step="1" value="3"></div>
+      <div class="field"><label for="minS">Mín. (s)</label><input id="minS" type="number" min="1" step="1" value="15"></div>
+      <div class="field"><label for="maxS">Máx. (s)</label><input id="maxS" type="number" min="2" step="1" value="60"></div>
+      <div class="field"><label for="format">Formato</label>
+        <select id="format">
+          <option value="vertical">Vertical 9:16 (TikTok)</option>
+          <option value="square">Cuadrado 1:1</option>
+          <option value="original">Original</option>
+        </select>
+      </div>
+      <div class="field grow"><label for="model">Modelo de Gemini</label><input id="model" type="text" value="gemini-3.1-flash-lite"></div>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>2. Vídeo</h2>
+    <label class="drop" id="drop">
+      <input id="file" type="file" accept="video/*">
+      <strong>Haz clic o arrastra aquí tu vídeo</strong><br>
+      <span class="muted">Cualquier tamaño y duración. El vídeo no sale de tu dispositivo.</span>
+    </label>
+    <div id="fileInfo" class="muted" style="margin-top:10px"></div>
+    <div class="player" id="player" hidden>
+      <video id="video" controls playsinline preload="metadata"></video>
+      <div class="cropbox" id="cropbox"></div>
+    </div>
+    <div class="row" style="margin-top:14px">
+      <button id="find" class="primary" disabled>Buscar clips</button>
+      <button id="cancel" hidden>Cancelar</button>
+    </div>
+    <div class="progress" id="findBar" hidden><div></div></div>
+    <div class="status" id="status"></div>
+  </section>
+
+  <section id="clipsSection" hidden>
+    <h2>3. Clips</h2>
+    <div id="clips"></div>
+  </section>
+
+  <footer>
+    El análisis lo hace Gemini con tu clave: solo se le envía el <strong>audio</strong> (comprimido) para elegir los
+    momentos. El corte y el encuadre se hacen en tu navegador. Funciona mejor en Chrome, Edge o Brave actualizados.
+  </footer>
+</main>
+
+<script type="module">
+import {
+  Input, BlobSource, ALL_FORMATS, Output, BufferTarget, Mp4OutputFormat, OggOutputFormat,
+  AdtsOutputFormat, Conversion, canEncodeAudio, getFirstEncodableVideoCodec,
+  getFirstEncodableAudioCodec, QUALITY_HIGH,
+} from 'https://cdn.jsdelivr.net/npm/mediabunny@1.39.2/dist/bundles/mediabunny.min.mjs';
+
+const $ = (id) => document.getElementById(id);
+const store = {
+  get(k) { try { return localStorage.getItem(k); } catch { return null; } },
+  set(k, v) { try { localStorage.setItem(k, v); } catch { /* storage blocked */ } },
+  del(k) { try { localStorage.removeItem(k); } catch { /* storage blocked */ } },
+};
+
+// Inline audio must fit Gemini's 20 MB request once base64-encoded (4/3).
+const MAX_AUDIO_BYTES = 14_000_000;
+const HOOK_SECONDS = 4;
+
+const state = { file: null, url: null, duration: 0, width: 0, height: 0, clips: [],
+  active: -1, busy: false, conversion: null, abort: null };
+
+// ---------- settings ----------
+const SETTINGS = ['nClips', 'minS', 'maxS', 'format', 'model'];
+for (const id of SETTINGS) {
+  const saved = store.get('clips_' + id);
+  if (saved) $(id).value = saved;
+  $(id).addEventListener('change', () => store.set('clips_' + id, $(id).value));
+}
+const savedKey = store.get('clips_gemini_key');
+if (savedKey) $('key').value = savedKey;
+$('key').addEventListener('change', saveKey);
+$('rememberKey').addEventListener('change', saveKey);
+function saveKey() {
+  if ($('rememberKey').checked && $('key').value.trim()) store.set('clips_gemini_key', $('key').value.trim());
+  else store.del('clips_gemini_key');
+}
+$('toggleKey').addEventListener('click', () => {
+  const show = $('key').type === 'password';
+  $('key').type = show ? 'text' : 'password';
+  $('toggleKey').textContent = show ? 'Ocultar' : 'Mostrar';
+});
+$('format').addEventListener('change', () => { renderClips(); updateCrop(); });
+
+if (!('VideoEncoder' in window) || !('AudioEncoder' in window)) {
+  setStatus('Este navegador no puede procesar vídeo. Usa Chrome, Edge o Brave actualizados.', true);
+}
+
+// ---------- helpers ----------
+function setStatus(text, error = false) {
+  $('status').textContent = text;
+  $('status').classList.toggle('error', error);
+}
+function setBar(bar, p) {
+  bar.hidden = p === null;
+  if (p !== null) bar.firstElementChild.style.width = Math.round(Math.max(0, Math.min(1, p)) * 100) + '%';
+}
+function fmt(sec) {
+  sec = Math.max(0, sec || 0);
+  const h = Math.floor(sec / 3600), m = Math.floor((sec % 3600) / 60), s = sec % 60;
+  const ss = s.toFixed(1).padStart(4, '0');
+  return h ? `${h}:${String(m).padStart(2, '0')}:${ss}` : `${m}:${ss}`;
+}
+function num(id, fallback) {
+  const v = parseFloat($(id).value);
+  return Number.isFinite(v) ? v : fallback;
+}
+function even(x) { return Math.max(2, Math.round(x / 2) * 2); }
+function slug(text) {
+  return (text || 'clip').normalize('NFD').replace(/[̀-ͯ]/g, '')
+    .replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40).toLowerCase() || 'clip';
+}
+function blobToBase64(blob) {
+  return new Promise((resolve, reject) => {
+    const r = new FileReader();
+    r.onload = () => resolve(String(r.result).split(',')[1] || '');
+    r.onerror = () => reject(r.error);
+    r.readAsDataURL(blob);
+  });
+}
+function esc(text) {
+  return String(text ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
+// Crop rectangle (source pixels) for the chosen format; pos 0..1 slides it.
+function cropRect(W, H, format, pos) {
+  if (format === 'original' || !W || !H) return null;
+  const ratio = format === 'square' ? 1 : 9 / 16;
+  if (W / H > ratio) {
+    const width = Math.min(W, even(H * ratio));
+    return { left: Math.round((W - width) * pos), top: 0, width, height: H };
+  }
+  const height = Math.min(H, even(W / ratio));
+  return { left: 0, top: Math.round((H - height) * pos), width: W, height };
+}
+
+// ---------- file ----------
+const drop = $('drop');
+drop.addEventListener('dragover', (e) => { e.preventDefault(); drop.classList.add('over'); });
+drop.addEventListener('dragleave', () => drop.classList.remove('over'));
+drop.addEventListener('drop', (e) => {
+  e.preventDefault(); drop.classList.remove('over');
+  if (e.dataTransfer.files[0]) loadFile(e.dataTransfer.files[0]);
+});
+$('file').addEventListener('change', (e) => { if (e.target.files[0]) loadFile(e.target.files[0]); });
+
+async function loadFile(file) {
+  if (state.busy) return;
+  state.file = file;
+  state.clips = []; state.active = -1;
+  renderClips();
+  if (state.url) URL.revokeObjectURL(state.url);
+  state.url = URL.createObjectURL(file);
+  const video = $('video');
+  video.src = state.url;
+  $('player').hidden = false;
+  setStatus('');
+  try {
+    const input = new Input({ source: new BlobSource(file), formats: ALL_FORMATS });
+    const track = await input.getPrimaryVideoTrack();
+    state.duration = await input.computeDuration();
+    state.width = track ? track.displayWidth : 0;
+    state.height = track ? track.displayHeight : 0;
+    const hasAudio = !!(await input.getPrimaryAudioTrack());
+    $('fileInfo').textContent = `${file.name} · ${fmt(state.duration)} · ` +
+      (track ? `${state.width}×${state.height}` : 'sin imagen') +
+      ` · ${(file.size / 1e6).toFixed(1)} MB` + (hasAudio ? '' : ' · ⚠️ sin audio');
+    $('find').disabled = !hasAudio || !track;
+    if (!hasAudio) setStatus('Este vídeo no tiene audio: esta versión necesita voz para encontrar los momentos.', true);
+  } catch (err) {
+    $('fileInfo').textContent = file.name;
+    $('find').disabled = true;
+    setStatus('No se pudo leer el vídeo: ' + (err.message || err), true);
+  }
+}
+
+// ---------- step 1: audio ----------
+async function extractAudio(onProgress) {
+  const input = new Input({ source: new BlobSource(state.file), formats: ALL_FORMATS });
+  // Gemini hears audio at ~16 kbps anyway; go lower on long videos so the
+  // whole track fits one request.
+  const bitrate = Math.floor(Math.min(24000, (MAX_AUDIO_BYTES * 8) / Math.max(1, state.duration)));
+  if (bitrate < 8000) throw new Error('El vídeo es demasiado largo para analizarlo de una vez (máximo unas 3 h 45 min).');
+  const tries = [['opus', 16000], ['opus', 48000], ['aac', 16000], ['aac', 44100], ['aac', 48000]];
+  let pick = null;
+  for (const [codec, sampleRate] of tries) {
+    const br = codec === 'aac' ? Math.max(bitrate, 32000) : bitrate;
+    if (await canEncodeAudio(codec, { numberOfChannels: 1, sampleRate, bitrate: br })) {
+      pick = { codec, sampleRate, bitrate: br }; break;
+    }
+  }
+  if (!pick) throw new Error('Este navegador no puede codificar audio (Opus ni AAC).');
+  const output = new Output({
+    format: pick.codec === 'opus' ? new OggOutputFormat() : new AdtsOutputFormat(),
+    target: new BufferTarget(),
+  });
+  const conversion = await Conversion.init({
+    input, output, showWarnings: false,
+    video: { discard: true },
+    audio: { codec: pick.codec, numberOfChannels: 1, sampleRate: pick.sampleRate,
+             bitrate: pick.bitrate, forceTranscode: true },
+  });
+  if (!conversion.isValid) throw new Error('No se pudo extraer el audio de este vídeo.');
+  conversion.onProgress = onProgress;
+  state.conversion = conversion;
+  await conversion.execute();
+  state.conversion = null;
+  const blob = new Blob([output.target.buffer], { type: pick.codec === 'opus' ? 'audio/ogg' : 'audio/aac' });
+  if (blob.size > MAX_AUDIO_BYTES * 1.1) throw new Error('El audio es demasiado grande para analizarlo de una vez.');
+  return blob;
+}
+
+// ---------- step 2: Gemini ----------
+function buildPrompt(n, minS, maxS) {
+  return `Eres un editor senior de vídeo corto y un copywriter viral. Te paso el AUDIO completo de un vídeo de ${fmt(state.duration)} (${Math.round(state.duration)} segundos). Encuentra los ${n} MEJORES clips para TikTok / Reels / Shorts y escribe sus textos.
+
+FASE 1 — EVALÚA TODO EL AUDIO (hazlo internamente, no lo muestres)
+- Escucha el audio completo y divídelo en momentos candidatos.
+- Puntúa cada momento de 0 a 100 según lo bien que funcionaría como short independiente. Usa todo el rango: la mayoría de momentos de un vídeo normal NO sirven como clip. Reserva 70+ para los que pasen la prueba de abajo; pon por debajo de 30 el relleno, saludos, despedidas, transiciones y divagaciones, aunque el tema sea interesante.
+- LA PRUEBA DE LOS 2 SEGUNDOS es el criterio principal: ¿los 2 primeros segundos de este momento obligarían a un espectador sin contexto a seguir mirando? Los momentos que solo funcionan si viste lo anterior puntúan bajo.
+- Prefiere momentos con gancho fuerte, conflicto, sorpresa, indignación, emoción, novedad, cifras llamativas o un desenlace claro.
+
+FASE 2 — ELIGE Y CORTA LOS ${n} MEJORES CLIPS
+- Exactamente ${n} clips, ordenados del mejor al peor. Solo devuelve menos si el audio de verdad no da para más.
+- Cada clip dura entre ${minS} y ${maxS} segundos. Comprueba la resta (end − start) antes de responder.
+- "start" y "end" son SEGUNDOS desde el inicio del audio, con decimales (por ejemplo 754.3), y deben caer exactamente donde empieza y termina lo que se dice. Están entre 0 y ${Math.floor(state.duration)}.
+- REGLA DE LOS 2 SEGUNDOS: el clip debe ABRIR con su momento más fuerte. Si los 2 primeros segundos no frenan el scroll, mueve el inicio o descarta el clip.
+- Empieza un poco antes del gancho y termina un poco después del desenlace. No cortes en medio de una palabra ni de una frase.
+- Nada de introducciones ni despedidas genéricas, salvo que sean el gancho.
+- SE ENTIENDE SOLO: el clip debe tener sentido para alguien que no vio nada más. Si empieza con un pronombre, un "eso", un "bueno, entonces" o una respuesta a una pregunta hecha antes, adelanta el INICIO hasta donde empieza la idea o descártalo. Arréglalo moviendo el inicio, nunca recortando el final.
+- DIVERSIDAD: los clips no pueden repetir la misma idea, historia o chiste.
+
+TEXTOS — todos en el MISMO IDIOMA que se habla en el audio:
+- hook: texto gancho que irá encima del vídeo, máximo 10 palabras. Patrones: pregunta abierta ("¿Por qué todo el mundo hace esto mal?"), opinión polémica ("Deja de hacer esto. En serio."), dato impactante ("El 97% de la gente no se da cuenta."), historia en bucle ("Este mensaje casi me arruina."), POV ("POV: por fin lo entiendes."). Debe hablar de lo que pasa EN ESTE CLIP (la acción, la cifra, la afirmación, el nombre), no del vídeo en general; si no puedes nombrar algo concreto, cita la frase más potente del clip.
+- tiktok_description: 1-2 frases con gancho que generen intriga sin destripar el final, y después 3-5 hashtags relevantes al tema. Nada de hashtags genéricos de relleno.
+- title: máximo 100 caracteres, que despierte curiosidad, sin promesas falsas.
+- score: puntuación viral honesta de 0 a 100.
+- why: una frase de máximo 20 palabras sobre el gancho o el desenlace concreto que hace funcionar el clip.
+- first_words y last_words: las primeras y las últimas palabras que se oyen en el clip.`;
+}
+
+const SCHEMA = {
+  type: 'OBJECT',
+  properties: {
+    clips: {
+      type: 'ARRAY',
+      items: {
+        type: 'OBJECT',
+        properties: {
+          start: { type: 'NUMBER' }, end: { type: 'NUMBER' }, score: { type: 'INTEGER' },
+          why: { type: 'STRING' }, hook: { type: 'STRING' }, tiktok_description: { type: 'STRING' },
+          title: { type: 'STRING' }, first_words: { type: 'STRING' }, last_words: { type: 'STRING' },
+        },
+        required: ['start', 'end', 'score', 'why', 'hook', 'tiktok_description', 'title'],
+        propertyOrdering: ['start', 'end', 'score', 'why', 'hook', 'tiktok_description', 'title', 'first_words', 'last_words'],
+      },
+    },
+  },
+  required: ['clips'],
+};
+
+async function askGemini(audio, n, minS, maxS) {
+  const key = $('key').value.trim();
+  const model = ($('model').value.trim() || 'gemini-3.1-flash-lite').replace(/^models\//, '');
+  state.abort = new AbortController();
+  const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`, {
+    method: 'POST',
+    signal: state.abort.signal,
+    headers: { 'content-type': 'application/json', 'x-goog-api-key': key },
+    body: JSON.stringify({
+      contents: [{ role: 'user', parts: [
+        { inlineData: { mimeType: audio.type, data: await blobToBase64(audio) } },
+        { text: buildPrompt(n, minS, maxS) },
+      ] }],
+      generationConfig: { responseMimeType: 'application/json', responseSchema: SCHEMA, temperature: 0.4 },
+    }),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    const msg = data?.error?.message || res.statusText;
+    if (res.status === 429) throw new Error('Google dice que has llegado al límite del plan gratuito. Espera un minuto y vuelve a intentarlo. (' + msg + ')');
+    if (res.status === 400 && /API key/i.test(msg)) throw new Error('La clave de Gemini no es válida. Revísala en Ajustes.');
+    if (/prepayment|billing|credits/i.test(msg)) throw new Error('Tu clave de Gemini está en un proyecto sin saldo. Crea una clave en un proyecto nuevo sin facturación (plan gratuito).');
+    throw new Error(`Gemini respondió con error ${res.status}: ${msg}`);
+  }
+  if (data?.promptFeedback?.blockReason) throw new Error('Gemini bloqueó el contenido: ' + data.promptFeedback.blockReason);
+  const text = (data?.candidates?.[0]?.content?.parts || []).map((p) => p.text || '').join('');
+  let parsed;
+  try { parsed = JSON.parse(text); } catch { throw new Error('Gemini no devolvió una respuesta válida. Vuelve a intentarlo.'); }
+  const clips = (parsed.clips || []).map((c) => {
+    const start = Math.max(0, Math.min(state.duration, Number(c.start) || 0));
+    const end = Math.max(0, Math.min(state.duration, Number(c.end) || 0));
+    return { start, end, score: Math.round(Number(c.score) || 0), why: c.why || '', hook: c.hook || '',
+      tiktok: c.tiktok_description || '', title: c.title || '', first: c.first_words || '',
+      last: c.last_words || '', pos: 0.5, burnHook: true, resultUrl: null, resultName: '' };
+  }).filter((c) => c.end - c.start >= 1);
+  if (!clips.length) throw new Error('Gemini no encontró clips en este vídeo.');
+  return clips;
+}
+
+// ---------- find ----------
+$('find').addEventListener('click', async () => {
+  if (!$('key').value.trim()) { setStatus('Pon tu clave de Gemini en Ajustes.', true); $('key').focus(); return; }
+  const n = Math.max(1, Math.round(num('nClips', 3)));
+  const minS = Math.max(1, num('minS', 15));
+  const maxS = Math.max(minS + 1, num('maxS', 60));
+  saveKey();
+  setBusy(true);
+  try {
+    setStatus('1/2 · Extrayendo el audio del vídeo…');
+    setBar($('findBar'), 0);
+    const audio = await extractAudio((p) => setBar($('findBar'), p * 0.6));
+    setStatus(`2/2 · Gemini está escuchando el audio (${(audio.size / 1e6).toFixed(1)} MB) y eligiendo los clips…`);
+    setBar($('findBar'), 0.7);
+    state.clips = await askGemini(audio, n, minS, maxS);
+    setBar($('findBar'), 1);
+    setStatus(`Listo: ${state.clips.length} clip(s). Revisa el inicio y el fin con "Ver" y descárgalos.`);
+    renderClips();
+    $('clipsSection').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  } catch (err) {
+    if (err?.name === 'AbortError' || err?.name === 'ConversionCanceledError') setStatus('Cancelado.');
+    else setStatus(err.message || String(err), true);
+  } finally {
+    setBusy(false);
+    setTimeout(() => setBar($('findBar'), null), 800);
+  }
+});
+$('cancel').addEventListener('click', () => {
+  state.abort?.abort();
+  state.conversion?.cancel();
+});
+function setBusy(busy) {
+  state.busy = busy;
+  $('find').disabled = busy || !state.file;
+  $('cancel').hidden = !busy;
+  document.querySelectorAll('[data-export]').forEach((b) => { b.disabled = busy; });
+}
+
+// ---------- clips UI ----------
+function renderClips() {
+  const box = $('clips');
+  $('clipsSection').hidden = !state.clips.length;
+  const format = $('format').value;
+  const canSlide = format !== 'original' && !!cropRect(state.width, state.height, format, 0.5) &&
+    (cropRect(state.width, state.height, format, 0).left !== cropRect(state.width, state.height, format, 1).left ||
+     cropRect(state.width, state.height, format, 0).top !== cropRect(state.width, state.height, format, 1).top);
+  box.innerHTML = state.clips.map((c, i) => `
+    <article class="clip${i === state.active ? ' active' : ''}" data-i="${i}">
+      <header><strong>Clip ${i + 1}</strong><span class="score">${c.score}/100</span></header>
+      <p class="why">${esc(c.why)}</p>
+      <div class="times">
+        <div class="field"><label>Inicio (s)</label>
+          <div class="nudge"><button class="small" data-nudge="start" data-d="-0.5">−</button>
+          <input type="number" step="0.1" min="0" data-k="start" value="${c.start.toFixed(1)}">
+          <button class="small" data-nudge="start" data-d="0.5">+</button></div></div>
+        <div class="field"><label>Fin (s)</label>
+          <div class="nudge"><button class="small" data-nudge="end" data-d="-0.5">−</button>
+          <input type="number" step="0.1" min="0" data-k="end" value="${c.end.toFixed(1)}">
+          <button class="small" data-nudge="end" data-d="0.5">+</button></div></div>
+        <div class="muted" data-span>${fmt(c.start)} → ${fmt(c.end)} · ${(c.end - c.start).toFixed(1)} s</div>
+        <button data-play>▶ Ver</button>
+      </div>
+      ${c.first || c.last ? `<p class="muted">Empieza: “${esc(c.first)}” · Termina: “${esc(c.last)}”</p>` : ''}
+      ${canSlide ? `<div class="field"><label>Encuadre (mueve el recuadro naranja)</label>
+        <input type="range" min="0" max="1" step="0.01" value="${c.pos}" data-k="pos"></div>` : ''}
+      <div class="grid2">
+        <div class="field"><div class="copyrow"><label>Texto gancho</label></div>
+          <input type="text" data-k="hook" value="${esc(c.hook)}">
+          <label class="check"><input type="checkbox" data-k="burnHook" ${c.burnHook ? 'checked' : ''}> Poner el gancho encima del vídeo (primeros ${HOOK_SECONDS} s)</label></div>
+        <div class="field"><div class="copyrow"><label>Título</label><button class="small" data-copy="title">Copiar</button></div>
+          <input type="text" data-k="title" value="${esc(c.title)}"></div>
+      </div>
+      <div class="field"><div class="copyrow"><label>Descripción para TikTok</label><button class="small" data-copy="tiktok">Copiar</button></div>
+        <textarea data-k="tiktok">${esc(c.tiktok)}</textarea></div>
+      <div class="row" style="margin-top:12px">
+        <button class="primary" data-export ${state.busy ? 'disabled' : ''}>Descargar MP4</button>
+      </div>
+      <div class="progress" data-bar hidden><div></div></div>
+      <div class="status" data-status></div>
+      <div class="result" data-result>${c.resultUrl ? resultHtml(c) : ''}</div>
+    </article>`).join('');
+}
+function resultHtml(c) {
+  return `<video src="${c.resultUrl}" controls playsinline></video>
+    <a class="btn" href="${c.resultUrl}" download="${esc(c.resultName)}">⬇ ${esc(c.resultName)}</a>`;
+}
+
+$('clips').addEventListener('input', (e) => {
+  const card = e.target.closest('.clip'); const k = e.target.dataset.k;
+  if (!card || !k) return;
+  const c = state.clips[+card.dataset.i];
+  if (k === 'burnHook') c.burnHook = e.target.checked;
+  else if (k === 'start' || k === 'end') c[k] = Math.max(0, Math.min(state.duration, parseFloat(e.target.value) || 0));
+  else if (k === 'pos') { c.pos = parseFloat(e.target.value); state.active = +card.dataset.i; updateCrop(); }
+  else c[k] = e.target.value;
+  if (k === 'start' || k === 'end') updateSpan(card, c);
+});
+$('clips').addEventListener('click', async (e) => {
+  const card = e.target.closest('.clip'); if (!card) return;
+  const i = +card.dataset.i, c = state.clips[i];
+  const btn = e.target.closest('button'); if (!btn) return;
+  if (btn.dataset.nudge) {
+    const k = btn.dataset.nudge;
+    c[k] = Math.max(0, Math.min(state.duration, c[k] + parseFloat(btn.dataset.d)));
+    card.querySelector(`input[data-k="${k}"]`).value = c[k].toFixed(1);
+    updateSpan(card, c);
+    if (state.active === i) preview(i, k === 'end' ? Math.max(c.start, c.end - 3) : c.start);
+  } else if (btn.hasAttribute('data-play')) {
+    preview(i, c.start);
+  } else if (btn.dataset.copy) {
+    try { await navigator.clipboard.writeText(c[btn.dataset.copy]); btn.textContent = '¡Copiado!'; }
+    catch { btn.textContent = 'No se pudo'; }
+    setTimeout(() => { btn.textContent = 'Copiar'; }, 1500);
+  } else if (btn.hasAttribute('data-export')) {
+    exportClip(i, card);
+  }
+});
+function updateSpan(card, c) {
+  card.querySelector('[data-span]').textContent = `${fmt(c.start)} → ${fmt(c.end)} · ${(c.end - c.start).toFixed(1)} s`;
+}
+
+// ---------- preview ----------
+const video = $('video');
+function preview(i, from) {
+  state.active = i;
+  document.querySelectorAll('.clip').forEach((el) => el.classList.toggle('active', +el.dataset.i === i));
+  video.currentTime = from;
+  video.play().catch(() => {});
+  updateCrop();
+  $('player').scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+video.addEventListener('timeupdate', () => {
+  const c = state.clips[state.active];
+  if (c && !video.paused && video.currentTime >= c.end) video.pause();
+});
+function updateCrop() {
+  const box = $('cropbox');
+  const c = state.clips[state.active];
+  const rect = c && cropRect(video.videoWidth, video.videoHeight, $('format').value, c.pos);
+  if (!rect) { box.style.display = 'none'; return; }
+  const ew = video.clientWidth, eh = video.clientHeight;
+  const scale = Math.min(ew / video.videoWidth, eh / video.videoHeight);
+  const ox = (ew - video.videoWidth * scale) / 2, oy = (eh - video.videoHeight * scale) / 2;
+  Object.assign(box.style, {
+    display: 'block', left: ox + rect.left * scale + 'px', top: oy + rect.top * scale + 'px',
+    width: rect.width * scale + 'px', height: rect.height * scale + 'px',
+  });
+}
+window.addEventListener('resize', updateCrop);
+video.addEventListener('loadedmetadata', updateCrop);
+
+// ---------- export ----------
+function hookDrawer(text, w, h) {
+  const canvas = new OffscreenCanvas(w, h);
+  const ctx = canvas.getContext('2d');
+  const size = Math.round(w * 0.068);
+  ctx.font = `800 ${size}px system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif`;
+  const maxWidth = w * 0.84;
+  const lines = [];
+  for (const word of text.trim().split(/\s+/)) {
+    const last = lines[lines.length - 1];
+    if (last && ctx.measureText(last + ' ' + word).width <= maxWidth) lines[lines.length - 1] = last + ' ' + word;
+    else lines.push(word);
+  }
+  const lineH = size * 1.22, padX = size * 0.6, padY = size * 0.45;
+  const boxW = Math.min(w * 0.92, Math.max(...lines.map((l) => ctx.measureText(l).width)) + padX * 2);
+  const boxH = lines.length * lineH + padY * 2;
+  const boxX = (w - boxW) / 2, boxY = h * 0.16;
+  let t0 = null;
+  return (sample) => {
+    if (t0 === null) t0 = sample.timestamp;
+    if (sample.timestamp - t0 >= HOOK_SECONDS) return sample;
+    sample.draw(ctx, 0, 0, w, h);
+    ctx.fillStyle = 'rgba(255,255,255,0.96)';
+    ctx.beginPath();
+    ctx.roundRect(boxX, boxY, boxW, boxH, size * 0.45);
+    ctx.fill();
+    ctx.fillStyle = '#0b0d12';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    lines.forEach((l, j) => ctx.fillText(l, w / 2, boxY + padY + lineH * (j + 0.5)));
+    return canvas;
+  };
+}
+
+async function exportClip(i, card) {
+  const c = state.clips[i];
+  const bar = card.querySelector('[data-bar]'), status = card.querySelector('[data-status]');
+  if (!(c.end > c.start)) { status.textContent = 'El fin tiene que ser mayor que el inicio.'; status.classList.add('error'); return; }
+  setBusy(true);
+  status.classList.remove('error');
+  status.textContent = 'Preparando…';
+  setBar(bar, 0);
+  try {
+    const input = new Input({ source: new BlobSource(state.file), formats: ALL_FORMATS });
+    const track = await input.getPrimaryVideoTrack();
+    const W = track.displayWidth, H = track.displayHeight;
+    const crop = cropRect(W, H, $('format').value, c.pos);
+    const srcW = crop ? crop.width : W, srcH = crop ? crop.height : H;
+    // Cap the long side at 1920 px (1080×1920 for vertical HD sources).
+    const scale = Math.min(1, 1920 / Math.max(srcW, srcH));
+    const outW = even(srcW * scale), outH = even(srcH * scale);
+    const vCodec = await getFirstEncodableVideoCodec(['avc', 'hevc', 'vp9', 'av1'], { width: outW, height: outH });
+    if (!vCodec) throw new Error('Este navegador no puede codificar vídeo.');
+    const aCodec = await getFirstEncodableAudioCodec(['aac', 'opus'], { sampleRate: 48000, numberOfChannels: 2 });
+    const output = new Output({ format: new Mp4OutputFormat({ fastStart: 'in-memory' }), target: new BufferTarget() });
+    const hook = c.burnHook && c.hook.trim() ? hookDrawer(c.hook, outW, outH) : undefined;
+    const conversion = await Conversion.init({
+      input, output, showWarnings: false,
+      trim: { start: c.start, end: c.end },
+      video: { crop: crop || undefined, width: outW, height: outH, fit: 'fill', codec: vCodec,
+               bitrate: QUALITY_HIGH, forceTranscode: true, process: hook },
+      audio: aCodec ? { codec: aCodec, bitrate: 160000, ...(aCodec === 'opus' ? { sampleRate: 48000 } : {}) } : { discard: true },
+    });
+    if (!conversion.isValid) throw new Error('No se pudo preparar el clip: ' + conversion.discardedTracks.map((d) => d.reason).join(', '));
+    conversion.onProgress = (p) => { setBar(bar, p); status.textContent = `Creando el clip… ${Math.round(p * 100)}%`; };
+    state.conversion = conversion;
+    await conversion.execute();
+    state.conversion = null;
+    if (c.resultUrl) URL.revokeObjectURL(c.resultUrl);
+    c.resultUrl = URL.createObjectURL(new Blob([output.target.buffer], { type: 'video/mp4' }));
+    c.resultName = `clip-${i + 1}-${slug(c.title)}.mp4`;
+    card.querySelector('[data-result]').innerHTML = resultHtml(c);
+    card.querySelector('[data-result] a').click();
+    status.textContent = `Listo (${outW}×${outH}, ${vCodec === 'avc' ? 'H.264' : vCodec.toUpperCase()}).` +
+      (vCodec === 'avc' ? '' : ' Ojo: TikTok prefiere H.264; prueba en Chrome o Edge si no lo acepta.');
+  } catch (err) {
+    status.classList.add('error');
+    status.textContent = err?.name === 'ConversionCanceledError' ? 'Cancelado.' : (err.message || String(err));
+  } finally {
+    state.conversion = null;
+    setBusy(false);
+    setTimeout(() => setBar(bar, null), 800);
+  }
+}
+</script>
+</body>
+</html>

@@ -3,6 +3,7 @@
 | Carpeta / archivo | Descripción |
 | --- | --- |
 | [`pasiones-en-pantalla/`](pasiones-en-pantalla/) | **Pasiones en Pantalla**: plataforma de streaming (React + Supabase) con panel de administración. **En línea:** https://stivenbry.github.io/Repositorio_python/pasiones/ · Configuración y despliegue en su [README](pasiones-en-pantalla/README.md). |
+| [`clips-web/`](clips-web/) | **Clips Sin Límites (versión web)**: versión ligera que funciona en el navegador, sin instalar nada. Sube un vídeo, Gemini (con tu clave) elige los mejores momentos y te los descargas en vertical con el texto gancho, el título y la descripción para TikTok. **En línea:** https://stivenbry.github.io/Repositorio_python/clips/ |
 | [`openshorts-sin-limites/`](openshorts-sin-limites/) | **OpenShorts Sin Límites**: convierte vídeos largos en clips verticales para TikTok, Reels y Shorts con IA, crea vídeos UGC con actores de IA y prepara miniaturas y títulos de YouTube. Copia de [OpenShorts](https://github.com/mutonby/openshorts) (MIT) sin cuotas, sin marca de agua y sin topes de tamaño, duración o número de clips. Se ejecuta en tu equipo con Docker; ver su [README](openshorts-sin-limites/README.md). |
 | `docs/` | Lo que publica GitHub Pages en https://stivenbry.github.io/Repositorio_python/ (se genera automáticamente; no editar a mano). |
 | `terapias.html` | Gestión de terapias sincronizada con Google Sheets. **En línea:** https://stivenbry.github.io/Repositorio_python/terapias.html |
