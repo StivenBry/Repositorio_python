@@ -3,7 +3,7 @@ import { useMemo } from 'react'
 import { AdSlot } from '../components/AdSlot'
 import { HeroCarousel, HeroSkeleton } from '../components/HeroCarousel'
 import { EmptyState } from '../components/States'
-import { EntryCard, LandscapeCard, PlaylistTile, PosterCard } from '../components/VideoCard'
+import { EntryCard, LandscapeCard, PosterCard } from '../components/VideoCard'
 import { VideoRow } from '../components/VideoRow'
 import { useCatalog } from '../context/CatalogContext'
 import { formatClock } from '../lib/format'
@@ -12,7 +12,7 @@ import { usePageTitle } from '../lib/usePageTitle'
 
 export default function HomePage() {
   usePageTitle()
-  const { videos, categories, playlists, playlistItems, toEntries, loading, error, refresh } = useCatalog()
+  const { videos, categories, toEntries, loading, error, refresh } = useCatalog()
   const progress = useProgress()
   const { ids: myListIds } = useMyList()
 
@@ -30,7 +30,6 @@ export default function HomePage() {
     [videos, progress],
   )
 
-  const nonEmptyPlaylists = playlists.filter((p) => playlistItems(p.id).length > 0)
   const top10 = useMemo(() => videos.filter((v) => v.is_top10).slice(0, 10), [videos])
   const myList = useMemo(() => myListIds.map((id) => videos.find((v) => v.id === id)).filter((v) => v !== undefined), [myListIds, videos])
 
@@ -103,13 +102,6 @@ export default function HomePage() {
             ))}
         </VideoRow>
         <AdSlot className="gutter" />
-        {nonEmptyPlaylists.length > 0 && (
-          <VideoRow title="Listas de reproducción">
-            {nonEmptyPlaylists.map((p) => (
-              <PlaylistTile key={p.id} playlist={p} items={playlistItems(p.id)} inRow />
-            ))}
-          </VideoRow>
-        )}
         {myList.length > 0 && (
           <VideoRow title="Mi lista" seeAllHref="/mi-lista">
             {myList.map((v) => (
