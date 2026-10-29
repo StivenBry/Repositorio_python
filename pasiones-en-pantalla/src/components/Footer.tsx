@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import { useCatalog } from '../context/CatalogContext'
+import { ADSTERRA } from '../lib/config'
 import { Logo } from './Logo'
 
 export function Footer() {
@@ -38,9 +39,16 @@ export function Footer() {
       </div>
       <div className="mt-10 flex flex-col gap-3 border-t border-line pt-6 sm:flex-row sm:items-center sm:justify-between">
         <p>© {new Date().getFullYear()} Pasiones en Pantalla. Todos los derechos reservados.</p>
-        <Link to="/privacidad" className="transition hover:text-white">
-          Privacidad
-        </Link>
+        <div className="flex gap-6">
+          {ADSTERRA.smartlink && (
+            <a href={ADSTERRA.smartlink} target="_blank" rel="sponsored noopener" className="transition hover:text-white">
+              Patrocinado
+            </a>
+          )}
+          <Link to="/privacidad" className="transition hover:text-white">
+            Privacidad
+          </Link>
+        </div>
       </div>
     </footer>
   )

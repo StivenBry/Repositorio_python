@@ -1,6 +1,16 @@
 import { defineConfig, loadEnv, type Plugin } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
+import {
+  ADSTERRA_BANNER_PAGE,
+  ADSTERRA_NATIVE_PAGE,
+  adsterraKey,
+  adsterraLinkUrl,
+  adsterraScriptUrl,
+  bannerPage,
+  nativeBannerPage,
+  parseBannerSize,
+} from './src/lib/adsterra.ts'
 
 /**
  * Las redes sociales exigen URLs absolutas en og:image. Se toma VITE_SITE_URL o,
@@ -60,13 +70,48 @@ function googleAdsense(client: string): Plugin {
   }
 }
 
+/**
+ * Adsterra: genera las páginas que alojan el Native Banner y el banner (ver src/lib/adsterra.ts).
+ * Popunder, Social Bar y Smartlink no necesitan archivos: la app los carga directamente.
+ */
+function adsterraPages(env: Record<string, string>): Plugin {
+  const warnIfInvalid = (name: string, valid: boolean) => {
+    if (env[name]?.trim() && !valid) console.warn(`[adsterra] ${name} no es válido; ese formato queda desactivado.`)
+  }
+  for (const name of ['VITE_ADSTERRA_POPUNDER', 'VITE_ADSTERRA_SOCIAL_BAR']) warnIfInvalid(name, Boolean(adsterraScriptUrl(env[name])))
+  warnIfInvalid('VITE_ADSTERRA_SMARTLINK', Boolean(adsterraLinkUrl(env.VITE_ADSTERRA_SMARTLINK)))
+
+  const nativeSrc = adsterraScriptUrl(env.VITE_ADSTERRA_NATIVE)
+  const bannerSrc = adsterraScriptUrl(env.VITE_ADSTERRA_BANNER)
+  const bannerSize = parseBannerSize(env.VITE_ADSTERRA_BANNER_SIZE || '468x60')
+  const native = nativeSrc && adsterraKey(nativeSrc) ? nativeSrc : ''
+  const banner = bannerSrc && adsterraKey(bannerSrc) && bannerSize ? bannerSrc : ''
+  warnIfInvalid('VITE_ADSTERRA_NATIVE', Boolean(native))
+  warnIfInvalid('VITE_ADSTERRA_BANNER', Boolean(banner))
+
+  return {
+    name: 'adsterra-pages',
+    generateBundle() {
+      if (native) this.emitFile({ type: 'asset', fileName: ADSTERRA_NATIVE_PAGE, source: nativeBannerPage(native) })
+      if (banner && bannerSize) this.emitFile({ type: 'asset', fileName: ADSTERRA_BANNER_PAGE, source: bannerPage(banner, bannerSize) })
+    },
+  }
+}
+
 export default defineConfig(({ mode }) => {
-  const adsClient = (loadEnv(mode, process.cwd(), 'VITE_').VITE_ADSENSE_CLIENT ?? '').trim()
+  const env = loadEnv(mode, process.cwd(), 'VITE_')
+  const adsClient = (env.VITE_ADSENSE_CLIENT ?? '').trim()
   if (adsClient && !ADSENSE_CLIENT_RE.test(adsClient)) {
     console.warn(`[adsense] VITE_ADSENSE_CLIENT="${adsClient}" no tiene el formato ca-pub-XXXXXXXXXXXXXXXX; AdSense queda desactivado.`)
   }
   return {
-    plugins: [react(), tailwindcss(), absoluteSocialUrls(), googleAdsense(ADSENSE_CLIENT_RE.test(adsClient) ? adsClient : '')],
+    plugins: [
+      react(),
+      tailwindcss(),
+      absoluteSocialUrls(),
+      googleAdsense(ADSENSE_CLIENT_RE.test(adsClient) ? adsClient : ''),
+      adsterraPages(env),
+    ],
     build: {
       target: 'es2022',
       chunkSizeWarningLimit: 700,

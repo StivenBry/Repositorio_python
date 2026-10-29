@@ -1,3 +1,5 @@
+import { adsterraKey, adsterraLinkUrl, adsterraScriptUrl, parseBannerSize } from './adsterra'
+
 const env = import.meta.env
 
 const rawUrl = env.VITE_SUPABASE_URL?.trim() ?? ''
@@ -20,6 +22,19 @@ const rawAdsClient = env.VITE_ADSENSE_CLIENT?.trim() ?? ''
 const rawAdsSlot = env.VITE_ADSENSE_SLOT?.trim() ?? ''
 export const ADSENSE_CLIENT = /^ca-pub-\d{16}$/.test(rawAdsClient) ? rawAdsClient : ''
 export const ADSENSE_SLOT = /^\d{6,}$/.test(rawAdsSlot) ? rawAdsSlot : ''
+
+// Adsterra (opcional). Cada formato se activa con su variable; las páginas de los
+// bloques las genera vite.config.ts con los mismos valores.
+const nativeSrc = adsterraScriptUrl(env.VITE_ADSTERRA_NATIVE)
+const bannerSrc = adsterraScriptUrl(env.VITE_ADSTERRA_BANNER)
+const bannerSize = parseBannerSize(env.VITE_ADSTERRA_BANNER_SIZE || '468x60')
+export const ADSTERRA = {
+  popunder: adsterraScriptUrl(env.VITE_ADSTERRA_POPUNDER),
+  socialBar: adsterraScriptUrl(env.VITE_ADSTERRA_SOCIAL_BAR),
+  smartlink: adsterraLinkUrl(env.VITE_ADSTERRA_SMARTLINK),
+  native: Boolean(nativeSrc && adsterraKey(nativeSrc)),
+  banner: bannerSrc && adsterraKey(bannerSrc) ? bannerSize : null,
+}
 
 /** Ruta pública de un archivo de /public respetando el `base` de Vite. */
 export const asset = (path: string) => `${import.meta.env.BASE_URL}${path.replace(/^\//, '')}`

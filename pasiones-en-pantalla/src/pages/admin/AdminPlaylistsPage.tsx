@@ -225,7 +225,7 @@ function PlaylistCard({ playlist, items, onDelete }: { playlist: Playlist; items
           </div>
           <div className="flex items-center gap-1">
             {busy && <Loader2 className="mr-1 size-4 animate-spin text-brand" />}
-            <Link to={`/lista/${playlist.id}`} className={iconBtn} title="Ver página pública" aria-label={`Ver ${playlist.title}`}>
+            <Link to={`/lista/${playlist.id}`} target="_blank" rel="noreferrer" className={iconBtn} title="Ver página pública" aria-label={`Ver ${playlist.title}`}>
               <ExternalLink className="size-4" />
             </Link>
             <button type="button" className={iconBtn} onClick={startEditing} title="Editar nombre, descripción y portada" aria-label={`Editar ${playlist.title}`}>

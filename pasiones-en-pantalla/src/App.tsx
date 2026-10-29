@@ -3,6 +3,7 @@ import { Outlet, Route, Routes, useLocation } from 'react-router-dom'
 import { Footer } from './components/Footer'
 import { Header } from './components/Header'
 import { FullPageSpinner } from './components/States'
+import { useAdsterraScripts } from './lib/useAdsterraScripts'
 import DetailPage from './pages/DetailPage'
 import HomePage from './pages/HomePage'
 import NotFoundPage from './pages/NotFoundPage'
@@ -51,6 +52,8 @@ function PublicLayout() {
 }
 
 export default function App() {
+  const { pathname } = useLocation()
+  useAdsterraScripts(!/^\/admin(\/|$)/.test(pathname))
   return (
     <Routes>
       <Route element={<PublicLayout />}>

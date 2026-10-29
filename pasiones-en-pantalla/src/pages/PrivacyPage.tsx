@@ -1,8 +1,9 @@
 import type { ReactNode } from 'react'
-import { ADSENSE_CLIENT } from '../lib/config'
+import { ADSENSE_CLIENT, ADSTERRA } from '../lib/config'
 import { usePageTitle } from '../lib/usePageTitle'
 
-const UPDATED = '23 de octubre de 2026'
+const UPDATED = '29 de octubre de 2026'
+const usesAdsterra = Boolean(ADSTERRA.popunder || ADSTERRA.socialBar || ADSTERRA.native || ADSTERRA.banner || ADSTERRA.smartlink)
 
 export default function PrivacyPage() {
   usePageTitle('Política de privacidad')
@@ -41,6 +42,20 @@ export default function PrivacyPage() {
               Google la información en <ExternalLink href="https://policies.google.com/technologies/ads">Cómo usa Google las cookies en publicidad</ExternalLink>.
               También puedes rechazar las cookies de otros proveedores en{' '}
               <ExternalLink href="https://optout.aboutads.info/">aboutads.info</ExternalLink>.
+            </p>
+          </Section>
+        )}
+
+        {usesAdsterra && (
+          <Section title="Publicidad (Adsterra)">
+            <p>
+              Este sitio muestra anuncios de Adsterra. Adsterra y sus anunciantes pueden usar cookies e identificadores similares
+              para mostrar anuncios, limitar cuántas veces ves cada uno y medir su rendimiento. Algunos anuncios se abren en una
+              pestaña o ventana nueva cuando haces clic en la página.
+            </p>
+            <p>
+              Puedes bloquear o borrar esas cookies desde la configuración de tu navegador. Más información en la{' '}
+              <ExternalLink href="https://adsterra.com/cookies/">política de cookies de Adsterra</ExternalLink>.
             </p>
           </Section>
         )}

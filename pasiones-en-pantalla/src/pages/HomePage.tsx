@@ -117,6 +117,7 @@ export default function HomePage() {
             ))}
           </VideoRow>
         ))}
+        <AdSlot className="gutter" format="banner" />
       </div>
     </>
   )
