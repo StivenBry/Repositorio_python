@@ -290,7 +290,7 @@ function Detail({ video, catalog }: { video: Video; catalog: Video[] }) {
           )}
         </div>
       </section>
-      <AdSlot className="gutter mt-14" />
+      <AdSlot className="gutter mt-14" format="banner" />
     </article>
   )
 }

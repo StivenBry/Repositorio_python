@@ -119,7 +119,7 @@ export default function SearchPage() {
               {deferredQuery.trim() ? `${results.length} resultado${results.length === 1 ? '' : 's'} para “${deferredQuery.trim()}”` : `${results.length} títulos`}
             </p>
             <VideoGrid entries={results} />
-            <AdSlot className="mt-12" />
+            <AdSlot className="mt-12" format="banner" />
           </>
         ) : (
           <EmptyState icon={SearchX} title="Sin resultados">

@@ -278,7 +278,7 @@ function RowActions({ video, onDelete }: { video: Video; onDelete: () => void })
   const btn = 'inline-flex size-9 items-center justify-center rounded-lg text-white/70 transition hover:bg-white/10 hover:text-white'
   return (
     <div className="flex items-center gap-1 md:justify-end">
-      <Link to={`/video/${video.id}`} className={btn} title="Ver ficha pública" aria-label={`Ver ${video.title}`}>
+      <Link to={`/video/${video.id}`} target="_blank" rel="noreferrer" className={btn} title="Ver ficha pública" aria-label={`Ver ${video.title}`}>
         <Eye className="size-4" />
       </Link>
       <Link to={`/admin/editar/${video.id}`} className={btn} title="Editar" aria-label={`Editar ${video.title}`}>

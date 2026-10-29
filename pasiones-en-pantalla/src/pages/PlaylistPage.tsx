@@ -68,6 +68,7 @@ export default function PlaylistPage() {
         </div>
       </section>
 
+      <AdSlot className="gutter mb-8" format="banner" />
       <ol className="gutter space-y-3">
         {items.map((v, i) => {
           const p = progress[v.id]

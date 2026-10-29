@@ -170,6 +170,27 @@ Los anuncios aparecen en el inicio (entre filas), en la ficha de cada video, en 
 en el reproductor ni en el panel. Si Google no llena un espacio, el bloque se oculta solo. Si activas *Auto ads* en AdSense,
 desactiva los anuncios "anclados" para que no tapen los controles del reproductor.
 
+## 💸 Publicidad con Adsterra
+
+Ya está activa en `.env.production`. Cada formato se configura con una variable cuyo valor es el `src` del script que
+da Adsterra en **Get code** (para el Smartlink, el enlace). Si una variable falta o está vacía, ese formato no se carga.
+
+| Variable | Formato | Dónde aparece |
+| --- | --- | --- |
+| `VITE_ADSTERRA_POPUNDER` | Popunder | Todo el sitio: se abre al hacer clic en la página. |
+| `VITE_ADSTERRA_SOCIAL_BAR` | Social Bar | Todo el sitio. |
+| `VITE_ADSTERRA_NATIVE` | Native Banner | Inicio (debajo de «Recién agregados»), categorías y final de cada lista. |
+| `VITE_ADSTERRA_BANNER` + `VITE_ADSTERRA_BANNER_SIZE` | Banner (p. ej. `468x60`) | Final del inicio, ficha de cada video, búsqueda y encima de los capítulos de cada lista. |
+| `VITE_ADSTERRA_SMARTLINK` | Smartlink | Enlace «Patrocinado» en el pie de página. |
+
+- Nunca se cargan en el panel `/admin`.
+- Como la app no recarga la página al navegar, el Native Banner y el banner se cargan dentro de páginas propias
+  (`ads/nativo.html` y `ads/banner.html`, generadas al compilar) para que se pidan de nuevo en cada sección. En
+  celulares el banner se reduce para caber en la pantalla.
+- En Adsterra el sitio está registrado como `stivenbry.github.io`. Si cambias a un dominio propio, agrégalo también allí.
+- Para cambiar un código: edita la variable, ejecuta `npm run build:pages` y sube los cambios (o deja que lo haga
+  la acción de GitHub al hacer push).
+
 ## 🌐 Dominio propio (p. ej. pasionesenpantalla.com)
 
 1. Compra el dominio en un registrador (Namecheap, Porkbun, Cloudflare, GoDaddy…).
