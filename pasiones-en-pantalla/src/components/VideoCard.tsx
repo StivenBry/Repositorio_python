@@ -1,6 +1,7 @@
 import { ListVideo, Play } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { formatDuration } from '../lib/format'
+import type { BrowseEntry } from '../context/CatalogContext'
 import type { Playlist, Video } from '../types'
 import { Artwork } from './Artwork'
 import { GemBadge, Top10Badge } from './Badges'
@@ -126,5 +127,57 @@ export function PlaylistTile({ playlist, items, inRow = false }: { playlist: Pla
         </div>
       </div>
     </Link>
+  )
+}
+
+const POSTER_ROW_WIDTH = 'w-[34vw] sm:w-[25vw] md:w-[19vw] lg:w-[14.6vw] xl:w-[12.4vw]'
+
+/** Póster vertical de una lista: agrupa sus capítulos; al abrirla se ven todos. */
+export function PlaylistPosterCard({
+  playlist,
+  items,
+  inRow = false,
+  showTitle = false,
+}: {
+  playlist: Playlist
+  items: Video[]
+  inRow?: boolean
+  showTitle?: boolean
+}) {
+  const image = playlist.cover_url ?? items[0]?.thumbnail_url ?? items[0]?.backdrop_url ?? null
+  const count = `${items.length} capítulo${items.length === 1 ? '' : 's'}`
+  return (
+    <Link
+      to={`/lista/${playlist.id}`}
+      className={`group/card relative block shrink-0 snap-start outline-none ${inRow ? POSTER_ROW_WIDTH : 'w-full'}`}
+      aria-label={`Lista: ${playlist.title}, ${count}`}
+    >
+      <div className="relative pt-2">
+        {/* Capas detrás del póster: indican que es una colección de capítulos. */}
+        <div className="absolute inset-x-3 top-0 h-6 rounded-t-md bg-white/15 transition group-hover/card:-translate-y-0.5" aria-hidden />
+        <div className="absolute inset-x-1.5 top-1 h-6 rounded-t-md bg-white/30 transition group-hover/card:-translate-y-0.5" aria-hidden />
+        <div className="relative aspect-[2/3] overflow-hidden rounded-md bg-panel shadow-lg shadow-black/40 ring-white/80 transition duration-300 ease-out group-hover/card:z-10 group-hover/card:scale-[1.06] group-hover/card:shadow-2xl group-hover/card:shadow-black/70 group-hover/card:ring-2 group-focus-visible/card:scale-[1.06] group-focus-visible/card:ring-2">
+          <Artwork src={image} title={playlist.title} showFallbackTitle={false} className="absolute inset-0 size-full" />
+          <span className="absolute top-1.5 left-1.5 inline-flex items-center gap-1 rounded bg-black/75 px-1.5 py-0.5 text-[0.7rem] font-bold backdrop-blur">
+            <ListVideo className="size-3.5 text-brand" />
+            {count}
+          </span>
+          <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent p-3 pt-10">
+            {!showTitle && <p className="line-clamp-2 text-sm leading-tight font-bold drop-shadow sm:text-base">{playlist.title}</p>}
+            <p className="mt-1 text-xs font-semibold text-brand opacity-0 transition group-hover/card:opacity-100">Ver capítulos →</p>
+          </div>
+        </div>
+      </div>
+      {showTitle && <p className="mt-2 line-clamp-2 text-sm font-medium text-white/85 group-hover/card:text-white">{playlist.title}</p>}
+    </Link>
+  )
+}
+
+/** Tarjeta vertical para una entrada de exploración (video suelto o lista). */
+export function EntryCard({ entry, inRow = false, showTitle = false }: { entry: BrowseEntry; inRow?: boolean; showTitle?: boolean }) {
+  return entry.kind === 'playlist' ? (
+    <PlaylistPosterCard playlist={entry.playlist} items={entry.items} inRow={inRow} showTitle={showTitle} />
+  ) : (
+    <PosterCard video={entry.video} inRow={inRow} showTitle={showTitle} />
   )
 }

@@ -10,15 +10,15 @@ import { usePageTitle } from '../lib/usePageTitle'
 import type { Video } from '../types'
 
 /** Cada palabra debe aparecer en el título, la descripción, la categoría o las etiquetas. */
-function matches(video: Video, terms: string[], playlistTitle = '') {
+function matches(video: Video, terms: string[], playlistText = '') {
   if (!terms.length) return true
-  const haystack = normalize([video.title, video.description, video.category, playlistTitle, ...video.tags].join(' '))
+  const haystack = normalize([video.title, video.description, video.category, playlistText, ...video.tags].join(' '))
   return terms.every((t) => haystack.includes(t))
 }
 
 export default function SearchPage() {
   usePageTitle('Buscar')
-  const { videos, categories, tags, loading, getPlaylist } = useCatalog()
+  const { videos, categories, tags, loading, getPlaylist, toEntries } = useCatalog()
   const [params, setParams] = useSearchParams()
   const [query, setQuery] = useState(params.get('q') ?? '')
   const category = params.get('categoria') ?? ''
@@ -47,8 +47,13 @@ export default function SearchPage() {
 
   const results = useMemo(() => {
     const terms = normalize(deferredQuery).split(/\s+/).filter(Boolean)
-    return videos.filter((v) => (!category || v.category === category) && matches(v, terms, getPlaylist(v.playlist_id)?.title))
-  }, [videos, deferredQuery, category, getPlaylist])
+    const found = videos.filter((v) => {
+      const playlist = getPlaylist(v.playlist_id)
+      return (!category || v.category === category) && matches(v, terms, playlist ? `${playlist.title} ${playlist.description}` : '')
+    })
+    // Los capítulos que coinciden aparecen dentro de su lista, no sueltos.
+    return toEntries(found)
+  }, [videos, deferredQuery, category, getPlaylist, toEntries])
 
   const chip = (active: boolean) =>
     `shrink-0 rounded-full border px-4 py-1.5 text-sm font-medium transition ${
@@ -113,7 +118,7 @@ export default function SearchPage() {
             <p className="mb-5 text-sm text-muted" aria-live="polite">
               {deferredQuery.trim() ? `${results.length} resultado${results.length === 1 ? '' : 's'} para “${deferredQuery.trim()}”` : `${results.length} títulos`}
             </p>
-            <VideoGrid videos={results} />
+            <VideoGrid entries={results} />
             <AdSlot className="mt-12" />
           </>
         ) : (
