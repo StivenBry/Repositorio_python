@@ -3,16 +3,16 @@ import { useMemo } from 'react'
 import { AdSlot } from '../components/AdSlot'
 import { HeroCarousel, HeroSkeleton } from '../components/HeroCarousel'
 import { EmptyState } from '../components/States'
-import { LandscapeCard, PlaylistTile, PosterCard } from '../components/VideoCard'
+import { EntryCard, LandscapeCard, PlaylistTile, PosterCard } from '../components/VideoCard'
 import { VideoRow } from '../components/VideoRow'
 import { useCatalog } from '../context/CatalogContext'
-import { formatClock, formatDuration } from '../lib/format'
+import { formatClock } from '../lib/format'
 import { useMyList, useProgress } from '../lib/localStore'
 import { usePageTitle } from '../lib/usePageTitle'
 
 export default function HomePage() {
   usePageTitle()
-  const { videos, categories, playlists, playlistItems, loading, error, refresh } = useCatalog()
+  const { videos, categories, playlists, playlistItems, toEntries, loading, error, refresh } = useCatalog()
   const progress = useProgress()
   const { ids: myListIds } = useMyList()
 
@@ -96,9 +96,11 @@ export default function HomePage() {
           </VideoRow>
         )}
         <VideoRow title="Recién agregados" seeAllHref="/buscar">
-          {videos.slice(0, 16).map((v) => (
-            <PosterCard key={v.id} video={v} inRow />
-          ))}
+          {toEntries(videos)
+            .slice(0, 16)
+            .map((entry) => (
+              <EntryCard key={entry.key} entry={entry} inRow />
+            ))}
         </VideoRow>
         <AdSlot className="gutter" />
         {nonEmptyPlaylists.length > 0 && (
@@ -108,17 +110,6 @@ export default function HomePage() {
             ))}
           </VideoRow>
         )}
-        {playlists.map((p) => {
-          const items = playlistItems(p.id)
-          if (!items.length) return null
-          return (
-            <VideoRow key={p.id} title={p.title} seeAllHref={`/lista/${p.id}`}>
-              {items.map((v, i) => (
-                <LandscapeCard key={v.id} video={v} inRow index={i + 1} subtitle={[v.category, formatDuration(v.duration_seconds)].filter(Boolean).join(' · ')} />
-              ))}
-            </VideoRow>
-          )
-        })}
         {myList.length > 0 && (
           <VideoRow title="Mi lista" seeAllHref="/mi-lista">
             {myList.map((v) => (
@@ -128,11 +119,10 @@ export default function HomePage() {
         )}
         {categories.map((c) => (
           <VideoRow key={c.slug} title={c.name} seeAllHref={`/categoria/${c.slug}`}>
-            {videos
-              .filter((v) => v.category === c.name)
-              .map((v) => (
-                <PosterCard key={v.id} video={v} inRow />
-              ))}
+            {/* Los capítulos de una lista aparecen como una sola tarjeta; se ven al abrirla. */}
+            {toEntries(videos.filter((v) => v.category === c.name)).map((entry) => (
+              <EntryCard key={entry.key} entry={entry} inRow />
+            ))}
           </VideoRow>
         ))}
       </div>

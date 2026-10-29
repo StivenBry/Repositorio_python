@@ -1,12 +1,15 @@
+import type { BrowseEntry } from '../context/CatalogContext'
 import type { Video } from '../types'
-import { PosterCard } from './VideoCard'
+import { EntryCard } from './VideoCard'
 
-export function VideoGrid({ videos }: { videos: Video[] }) {
+/** Cuadrícula de pósters. Con `entries`, las listas aparecen agrupadas en una sola tarjeta. */
+export function VideoGrid({ videos = [], entries }: { videos?: Video[]; entries?: BrowseEntry[] }) {
+  const items: BrowseEntry[] = entries ?? videos.map((v) => ({ kind: 'video', key: v.id, title: v.title, video: v }))
   return (
     <div className="grid grid-cols-3 gap-x-2.5 gap-y-6 sm:grid-cols-4 sm:gap-x-3 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7">
-      {videos.map((v, i) => (
-        <div key={v.id} className="animate-rise-in" style={{ animationDelay: `${Math.min(i, 14) * 35}ms` }}>
-          <PosterCard video={v} showTitle />
+      {items.map((entry, i) => (
+        <div key={entry.key} className="animate-rise-in" style={{ animationDelay: `${Math.min(i, 14) * 35}ms` }}>
+          <EntryCard entry={entry} showTitle />
         </div>
       ))}
     </div>

@@ -5,7 +5,7 @@ import { AdSlot } from '../components/AdSlot'
 import { Artwork } from '../components/Artwork'
 import { Dot, ExclusiveChip, RatingBadge, Top10Badge } from '../components/Badges'
 import { EmptyState, FullPageSpinner } from '../components/States'
-import { LandscapeCard } from '../components/VideoCard'
+import { LandscapeCard, PlaylistTile } from '../components/VideoCard'
 import { useAuth } from '../context/AuthContext'
 import { useCatalog } from '../context/CatalogContext'
 import { useToast } from '../context/ToastContext'
@@ -48,7 +48,7 @@ function Detail({ video, catalog }: { video: Video; catalog: Video[] }) {
   const [expanded, setExpanded] = useState(false)
   const [clamped, setClamped] = useState(false)
   const descriptionRef = useRef<HTMLParagraphElement>(null)
-  const { getPlaylist, playlistItems } = useCatalog()
+  const { getPlaylist, playlistItems, toEntries } = useCatalog()
   const playlist = getPlaylist(video.playlist_id)
   const playlistVideos = playlist ? playlistItems(playlist.id) : []
   const playlistIndex = playlistVideos.findIndex((v) => v.id === video.id)
@@ -56,18 +56,19 @@ function Detail({ video, catalog }: { video: Video; catalog: Video[] }) {
   const inList = has(video.id)
   const scheduled = !isPublished(video.published_at)
 
+  // Otras listas aparecen agrupadas; los capítulos de esta misma lista ya están en su pestaña.
   const related = useMemo(() => {
     const tags = new Set(video.tags.map(normalize))
-    return catalog
-      .filter((v) => v.id !== video.id)
+    const scored = catalog
+      .filter((v) => v.id !== video.id && (!video.playlist_id || v.playlist_id !== video.playlist_id))
       .map((v) => ({
         v,
         score: (v.category === video.category ? 3 : 0) + v.tags.filter((t) => tags.has(normalize(t))).length,
       }))
       .sort((a, b) => b.score - a.score || b.v.published_at.localeCompare(a.v.published_at))
-      .slice(0, 12)
       .map((x) => x.v)
-  }, [catalog, video])
+    return toEntries(scored).slice(0, 12)
+  }, [catalog, video, toEntries])
 
   // "Ver más" solo aparece si el texto realmente se recorta.
   useEffect(() => {
@@ -243,9 +244,17 @@ function Detail({ video, catalog }: { video: Video; catalog: Video[] }) {
           ) : tab === 'related' ? (
             related.length ? (
               <div className="grid grid-cols-1 gap-x-4 gap-y-7 min-[480px]:grid-cols-2 md:grid-cols-3 xl:grid-cols-4">
-                {related.map((v) => (
-                  <LandscapeCard key={v.id} video={v} subtitle={[v.category, formatDuration(v.duration_seconds)].filter(Boolean).join(' · ')} />
-                ))}
+                {related.map((entry) =>
+                  entry.kind === 'playlist' ? (
+                    <PlaylistTile key={entry.key} playlist={entry.playlist} items={entry.items} />
+                  ) : (
+                    <LandscapeCard
+                      key={entry.key}
+                      video={entry.video}
+                      subtitle={[entry.video.category, formatDuration(entry.video.duration_seconds)].filter(Boolean).join(' · ')}
+                    />
+                  ),
+                )}
               </div>
             ) : (
               <p className="text-muted">Pronto habrá más títulos como este.</p>

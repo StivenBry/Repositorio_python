@@ -11,17 +11,21 @@ type Sort = 'recent' | 'az' | 'top'
 
 export default function CategoryPage() {
   const { slug = '' } = useParams()
-  const { videos, categories, loading } = useCatalog()
+  const { videos, categories, loading, toEntries } = useCatalog()
   const [sort, setSort] = useState<Sort>('recent')
   const category = categories.find((c) => c.slug === slug)
   usePageTitle(category?.name ?? 'Categoría')
 
-  const list = useMemo(() => {
-    const items = videos.filter((v) => v.category === category?.name)
-    if (sort === 'az') return [...items].sort((a, b) => a.title.localeCompare(b.title, 'es'))
-    if (sort === 'top') return [...items].sort((a, b) => Number(b.is_top10) - Number(a.is_top10))
-    return items
-  }, [videos, category, sort])
+  // Los capítulos de una lista se muestran como una sola tarjeta; se ven al abrir la lista.
+  const entries = useMemo(() => {
+    const grouped = toEntries(videos.filter((v) => v.category === category?.name))
+    if (sort === 'az') return [...grouped].sort((a, b) => a.title.localeCompare(b.title, 'es'))
+    if (sort === 'top') {
+      const isTop = (e: (typeof grouped)[number]) => (e.kind === 'video' ? e.video.is_top10 : e.items.some((v) => v.is_top10))
+      return [...grouped].sort((a, b) => Number(isTop(b)) - Number(isTop(a)))
+    }
+    return grouped
+  }, [videos, category, sort, toEntries])
 
   return (
     <div className="gutter pt-24 lg:pt-32">
@@ -47,7 +51,7 @@ export default function CategoryPage() {
           <GridSkeleton />
         ) : category ? (
           <>
-            <VideoGrid videos={list} />
+            <VideoGrid entries={entries} />
             <AdSlot className="mt-12" />
           </>
         ) : (
