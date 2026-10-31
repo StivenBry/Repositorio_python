@@ -7,6 +7,10 @@ Dos shorts animados de unos 25 segundos (1080×1920, 30 fps, con música, efecto
 | [`videos/perro_travieso.mp4`](videos/perro_travieso.mp4) | «Cuando dejas a tu perro solo 5 minutos…»: el perro activa el modo travieso, destroza un cojín, tira la planta y llena la sala de papel higiénico. Cuando el dueño vuelve, pone carita de «yo no fui» con aureola incluida. |
 | [`videos/gato_holgazan.mp4`](videos/gato_holgazan.mp4) | «Mi gato un lunes a las 7:00 a.m.»: apaga el despertador de un manotazo sin levantarse, deja pasar al ratón, estira la pata hasta el plato para no caminar, «juega» con el láser moviendo solo los ojos y termina escurriéndose del sofá con la batería al 1 %. |
 
+## Versión realista (Pippit)
+
+En [`guiones_realistas.md`](guiones_realistas.md) están los dos guiones listos para generar con IA de video (por ejemplo Pippit), en el mismo estilo del video de referencia: prompt de cada escena y narración en primera persona.
+
 ## Volver a generarlos
 
 Requisitos: Python 3, `ffmpeg` y las librerías de `requirements.txt`.
